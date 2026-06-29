@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 class Settings:
     """Consolidated configuration settings for the AgyQueue application."""
@@ -65,8 +66,6 @@ class Settings:
     @property
     def heartbeat_timeout(self) -> float:
         return float(os.environ.get("HEARTBEAT_TIMEOUT_SECONDS", "15.0"))
-
-from typing import Optional
 
 # Global settings instance
 settings = Settings()
