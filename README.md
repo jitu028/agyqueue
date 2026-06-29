@@ -1,6 +1,6 @@
 # AgyQueue: Non-Blocking Asynchronous Task Execution for AI Agents
 
-[![Run on Google Cloud](https://deploy.cloud.google.com/button.svg)](https://deploy.cloud.google.com/?git_repo=https://github.com/jitu028/agyqueue.git)
+[![Run on Google Cloud](https://deploy.cloud.run/button.svg)](https://deploy.cloud.run/?git_repo=https://github.com/jitu028/agyqueue.git)
 
 AgyQueue is a lightweight, non-blocking asynchronous task execution framework built for AI agents. It allows agents to offload long-running operations—such as code generation, compilation, testing, and validation—to background workers while keeping client conversation threads responsive.
 
