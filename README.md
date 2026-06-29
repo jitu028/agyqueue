@@ -44,12 +44,52 @@ When migrating from local development/fallback to production cloud scaling, AgyQ
 | **Workspace Repos** | Local Directory | **Google Cloud Storage (GCS)** Buckets |
 | **Traffic Router** | Direct Port Binding | **Google Cloud Load Balancing** (HTTPS Layer 7 Router) |
 
+---
+
+## 📦 Installation & Setup
+
+### Install as Python Package (Local Development)
+You can install AgyQueue locally in editable mode for development and testing:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
+cp .env.example .env
+```
+
+### Install from PyPI
+Once published, users can install AgyQueue directly from PyPI:
+```bash
+pip install agyqueue
+```
 
 ---
 
-## 📁 Examples & Supported Integrations
+## 🏁 Quick Start
 
-The [examples/](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/) folder contains detailed, ready-to-run client scripts for every connection method:
+### 1. Run Standalone Dev Demo
+Spins up a local server, enqueues an SRE compliance check and FastAPI code generator workflow, executes it in isolated directories, and outputs the final report:
+```bash
+python examples/demo.py
+```
+
+### 2. Open the Web Console Dashboard
+Start the standalone SSE server and background worker:
+```bash
+# Terminal 1: Start Server
+export AGYQUEUE_TRANSPORT=sse
+python -m agyqueue.mcp_server
+
+# Terminal 2: Start Worker
+python -m agyqueue.worker
+```
+Navigate to [http://localhost:8000/dashboard](http://localhost:8000/dashboard) to submit runs, inspect progress, and view timeline event history logs.
+
+---
+
+## 📁 Examples & Client Integrations
+
+The [examples/](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/) folder contains detailed client scripts for every connection method:
 
 * **Antigravity 2.0 SDK**: [examples/antigravity_agent_sdk.py](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/antigravity_agent_sdk.py) shows how to bind tools to a `google.antigravity` agent.
 * **Google ADK Agents**: [examples/google_adk_agent.py](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/google_adk_agent.py) demonstrates tool binding in the `google.adk.agents` framework.
@@ -59,45 +99,118 @@ The [examples/](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examp
 
 ---
 
-## 🏁 Quick Start (Local Run)
+## 🔌 Connecting to Agentic Frameworks
 
-1. **Setup Environment**:
-   ```bash
-   python3 -m venv .venv
-   source .venv/bin/activate
-   pip install -r requirements.txt
-   cp .env.example .env
-   ```
+### 1. Google Agent Development Kit (ADK) & Agent Engine
+The Google **ADK** allows Python-defined agents to be deployed to **Agent Engine** (Vertex AI Reasoning Engine). Import and register AgyQueue's functional tools directly:
 
-2. **Run Standalone Dev Demo**:
-   Spins up a local server, enqueues an SRE manifest compliance and FastAPI code generator workflow, executes it in isolated directories, and outputs the final report:
-   ```bash
-   python examples/demo.py
-   ```
+```python
+from google.adk.agents import Agent
+from agyqueue.client import submit_async_task, check_task_progress, get_task_output, cancel_running_task
 
-3. **Open the Web Console Dashboard**:
-   Start the standalone SSE server and background worker:
-   ```bash
-   # Terminal 1: Start Server
-   export AGYQUEUE_TRANSPORT=sse
-   python -m agyqueue.mcp_server
+# Define the coordinator agent
+orchestrator_agent = Agent(
+    name="deployment_coordinator",
+    model="gemini-2.5-flash",
+    instruction=(
+        "You coordinate SRE compliance checks and API code generation workloads. "
+        "Use submit_async_task to spawn background jobs. Do not wait for jobs in a loop. "
+        "Return the task_id to the user/orchestrator so that progress can be tracked asynchronously."
+    ),
+    tools=[
+        submit_async_task,
+        check_task_progress,
+        get_task_output,
+        cancel_running_task
+    ]
+)
+```
 
-   # Terminal 2: Start Worker
-   python -m agyqueue.worker
-   ```
-   Navigate to [http://localhost:8000/dashboard](http://localhost:8000/dashboard) to submit runs, inspect progress, and view timeline event history logs.
+### 2. Registering with Gemini Enterprise & Agent Registry
+Expose the deployed URL to Gemini Enterprise using the `agents-cli` tool:
+```bash
+agents-cli publish gemini-enterprise \
+  --name "agyqueue-service" \
+  --description "Exposes asynchronous background task execution, cancellation, and progress tracking tools." \
+  --url "https://agyqueue-server-dev-xxxx-uc.a.run.app/sse" \
+  --type "mcp"
+```
+
+---
+
+## 💻 Local IDE Integration (MCP)
+
+### Claude Desktop Configuration
+Add the following to your `claude_desktop_config.json` (located in `~/Library/Application Support/Claude/` on macOS):
+```json
+{
+  "mcpServers": {
+    "agyqueue": {
+      "command": "python",
+      "args": ["-m", "agyqueue.mcp_server"],
+      "env": {
+        "PYTHONPATH": "/absolute/path/to/your/agyqueue/repo",
+        "AGYQUEUE_TRANSPORT": "stdio",
+        "AGYQUEUE_DB_PATH": "/absolute/path/to/your/agyqueue/repo/agyqueue.db"
+      }
+    }
+  }
+}
+```
+
+### Cursor Configuration
+1. Open Cursor Settings -> Features -> MCP.
+2. Click **+ Add New MCP Server**.
+3. Configure:
+   * **Name**: `AgyQueue`
+   * **Type**: `command`
+   * **Command**: `PYTHONPATH=. .venv/bin/python -m agyqueue.mcp_server` (relative to your repo path).
+
+### VS Code Configuration (Cline / Roo Code Extensions)
+Append the AgyQueue stdio server configuration to `cline_mcp_settings.json`:
+```json
+{
+  "mcpServers": {
+    "agyqueue": {
+      "command": "python",
+      "args": ["-m", "agyqueue.mcp_server"],
+      "env": {
+        "PYTHONPATH": "/absolute/path/to/your/agyqueue/repo",
+        "AGYQUEUE_TRANSPORT": "stdio",
+        "AGYQUEUE_DB_PATH": "/absolute/path/to/your/agyqueue/repo/agyqueue.db"
+      }
+    }
+  }
+}
+```
+
+### Claude Code CLI Integration
+Add AgyQueue as a local tool under the `"mcpServers"` dictionary in `~/.config/claude-code/mcp.json`.
+
+---
+
+## 🌳 Multi-Agent Tree-Based Orchestration Pattern
+
+AgyQueue natively supports **parent-child task aggregation**. When an orchestrator agent splits a large request into parallel child workloads, it submits the subtasks with a `parent_id` parameter:
+
+1. **Task Submission**:
+   * The orchestrator spawns subagents by submitting child tasks referencing the parent ID.
+   * The parent task status transitions to `WAITING`.
+2. **Worker Isolation**:
+   * Background workers pick up and execute child tasks in isolated workspaces (`git_worktree` or copy-on-write temp folders) in parallel.
+3. **Automatic Resumption**:
+   * As soon as the final sibling completes, the worker recognizes that all siblings are done and automatically re-queues the parent task.
+   * The orchestrator wakes up, reads the logs of all completed subtasks, aggregates the results, and marks the parent task as `COMPLETED`.
 
 ---
 
 ## 🐳 Docker Compose Deployment (Redis + SSE Mode)
 
-To run the complete production-mimicking system with Redis queues and PostgreSQL stores:
-
+To run the complete system with Redis queues and PostgreSQL stores:
 1. **Build and Run**:
    ```bash
    docker compose up --build
    ```
-
 2. **Verify over SSE**:
    ```bash
    python examples/mcp_sse_client.py
@@ -111,5 +224,47 @@ For Google Cloud production environments, configuration templates are located in
 * **Cloud Run**: Serverless container setups with Memorystore Redis and Cloud SQL PostgreSQL.
 * **GKE**: Scalable Kubernetes microservices with Horizontal Pod Autoscalers (HPA).
 
-For complete deployment details, see [INTEGRATION_GUIDE.md](file:///Users/jitendragupta/Documents/github-repo/agyqueue/INTEGRATION_GUIDE.md).
+---
 
+## 🔔 Slack & Email Notifications
+
+To configure alerts on task completion or failure, set the following environment variables:
+```bash
+# Enable channels (comma-separated list)
+export AGYQUEUE_NOTIFICATIONS="slack,email"
+
+# 1. Slack Webhook Configuration
+export SLACK_WEBHOOK_URL="https://example.com/slack-webhook-url"
+
+# 2. Email SMTP Configuration
+export SMTP_HOST="smtp.gmail.com"
+export SMTP_PORT="587"
+export SMTP_USER="your-email@gmail.com"
+export SMTP_PASSWORD="your-app-password"
+export SMTP_FROM="noreply@agyqueue.internal"
+export SMTP_TO="recipient-alert-inbox@domain.com"
+```
+
+---
+
+## 🚀 Publishing to PyPI
+
+### Step 1: Install Build Tools
+```bash
+pip install --upgrade build twine
+```
+
+### Step 2: Build the Distribution Package
+```bash
+python -m build
+```
+
+### Step 3: Upload to PyPI
+Run twine to securely publish to PyPI under your profile:
+```bash
+python -m twine upload dist/*
+```
+Once uploaded, anyone can install and run the AgyQueue CLI globally:
+```bash
+pip install agyqueue
+```
