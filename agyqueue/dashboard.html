@@ -292,7 +292,9 @@
 
         .workflows-grid-container {
             flex: 1;
+            min-width: 0; /* prevents flex content overflow */
             overflow-y: auto;
+            overflow-x: auto; /* allows horizontal scroll when columns exceed container width */
             border-right: 1px solid var(--border-color);
         }
 
@@ -300,6 +302,7 @@
             width: 100%;
             border-collapse: collapse;
             text-align: left;
+            table-layout: auto; /* dynamic columns sizing */
         }
 
         .workflow-table th {
@@ -318,6 +321,7 @@
             border-bottom: 1px solid var(--border-color);
             font-size: 13px;
             vertical-align: middle;
+            white-space: nowrap; /* keeps row content from wrap breaking */
         }
 
         .workflow-row {
@@ -374,7 +378,7 @@
             width: 48%;
             min-width: 480px;
             background-color: var(--bg-secondary);
-            display: flex;
+            display: none; /* Hidden by default, toggled via JS on select */
             flex-direction: column;
             overflow: hidden;
             height: 100%;
@@ -767,8 +771,13 @@
                     <div class="details-header">
                         <div class="details-title-row">
                             <span class="details-workflow-id" id="detWorkflowId">agy-xxxx</span>
-                            <div class="details-actions">
-                                <button class="btn btn-secondary btn-danger" id="detCancelBtn" style="padding: 6px 12px; font-size: 11px;">Cancel Run</button>
+                            <div class="details-actions" style="display: flex; gap: 8px;">
+                                <button class="btn btn-secondary btn-danger" id="detCancelBtn" style="padding: 6px 12px; font-size: 11px; width: auto;">Cancel Run</button>
+                                <button class="btn btn-secondary" onclick="closeDetails()" style="padding: 6px 10px; font-size: 11px; width: auto; display: flex; align-items: center; justify-content: center;" title="Close Panel">
+                                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
 
@@ -916,6 +925,7 @@
             // Re-render table rows to update highlight
             renderGrid();
             
+            document.getElementById('detailsPane').style.display = 'flex'; // show the pane
             document.getElementById('detailsPlaceholder').style.display = 'none';
             document.getElementById('detailsWorkspace').style.display = 'flex';
             
@@ -924,6 +934,19 @@
             // Set details refreshing
             if (pollIntervalId) clearInterval(pollIntervalId);
             pollIntervalId = setInterval(refreshWorkflowDetails, 1500);
+        }
+
+        // Close details panel and deselect task
+        function closeDetails() {
+            currentTaskId = null;
+            if (pollIntervalId) {
+                clearInterval(pollIntervalId);
+                pollIntervalId = null;
+            }
+            document.getElementById('detailsPane').style.display = 'none';
+            document.getElementById('detailsWorkspace').style.display = 'none';
+            document.getElementById('detailsPlaceholder').style.display = 'flex';
+            renderGrid();
         }
 
         // Fetch detailed task state from endpoint
