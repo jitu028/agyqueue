@@ -3,6 +3,7 @@ import json
 import logging
 import sys
 import os
+from typing import Optional
 from starlette.requests import Request
 from starlette.responses import JSONResponse, HTMLResponse
 from mcp.server.fastmcp import FastMCP
