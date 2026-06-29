@@ -429,7 +429,7 @@
 
         .details-meta-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 16px;
             background-color: rgba(17, 24, 39, 0.4);
             padding: 16px;
@@ -678,9 +678,10 @@
 
         <div class="sidebar-section">Namespace</div>
         <div style="padding: 0 20px 20px; border-bottom: 1px solid var(--border-color);">
-            <select style="width: 100%; background-color: var(--bg-primary); border: 1px solid var(--border-color); color: white; padding: 8px; border-radius: 6px; font-size: 12px; outline: none;">
+            <select id="namespaceSelect" onchange="onNamespaceChange()" style="width: 100%; background-color: var(--bg-primary); border: 1px solid var(--border-color); color: white; padding: 8px; border-radius: 6px; font-size: 12px; outline: none;">
                 <option value="default">default-namespace</option>
                 <option value="production">production-namespace</option>
+                <option value="__create_new__">+ Create Namespace...</option>
             </select>
         </div>
 
@@ -791,12 +792,20 @@
                                 <div><span class="status-badge" id="detMetaBadge">COMPLETED</span></div>
                             </div>
                             <div class="meta-item">
+                                <span class="meta-label">Namespace</span>
+                                <span class="meta-value" id="detMetaNamespace">default</span>
+                            </div>
+                            <div class="meta-item">
                                 <span class="meta-label">Parent Task</span>
                                 <span class="meta-value" id="detMetaParent">None</span>
                             </div>
                             <div class="meta-item">
                                 <span class="meta-label">Start Time</span>
                                 <span class="meta-value" id="detMetaStart">--/-- --:--</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">End Time</span>
+                                <span class="meta-value" id="detMetaEnd">--/-- --:--</span>
                             </div>
                         </div>
                     </div>
@@ -848,7 +857,9 @@
         // Fetch task list and reload grid
         async function fetchTaskList() {
             try {
-                const response = await fetch('/api/tasks');
+                const namespace = document.getElementById('namespaceSelect').value;
+                const url = namespace && namespace !== '__create_new__' ? `/api/tasks?namespace=${namespace}` : '/api/tasks';
+                const response = await fetch(url);
                 allTasks = await response.json();
                 
                 // Update filter badge counts
@@ -984,7 +995,15 @@
                     parentCell.onclick = null;
                 }
                 
-                document.getElementById('detMetaStart').innerText = task.updated_at ? task.updated_at.replace('T', ' ').substring(0, 19) : '--/-- --:--';
+                document.getElementById('detMetaNamespace').innerText = task.namespace || 'default';
+                
+                const formatTime = (isoStr) => {
+                    if (!isoStr) return '--/-- --:--';
+                    return isoStr.replace('T', ' ').substring(0, 19);
+                };
+                
+                document.getElementById('detMetaStart').innerText = formatTime(task.created_at);
+                document.getElementById('detMetaEnd').innerText = task.completed_at ? formatTime(task.completed_at) : (['COMPLETED', 'FAILED', 'CANCELLED'].includes(task.status) ? formatTime(task.updated_at) : 'Running...');
                 
                 // Show/hide cancel button
                 const cancelBtn = document.getElementById('detCancelBtn');
@@ -1087,12 +1106,13 @@
             e.preventDefault();
             const prompt = document.getElementById('promptInput').value;
             const task_type = document.getElementById('typeSelect').value;
+            const namespace = document.getElementById('namespaceSelect').value;
             
             try {
                 const response = await fetch('/api/tasks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, task_type })
+                    body: JSON.stringify({ prompt, task_type, namespace })
                 });
                 
                 if (response.ok) {
@@ -1170,7 +1190,86 @@
                 .replace(/\n/g, '<br>');
         }
 
+        // Handle namespace selection change and creation
+        async function onNamespaceChange() {
+            const select = document.getElementById('namespaceSelect');
+            const val = select.value;
+            
+            if (val === '__create_new__') {
+                const name = prompt("Enter new namespace name:");
+                if (name && name.trim()) {
+                    const cleanName = name.trim().toLowerCase().replace(/[^a-z0-9-_]/g, '-');
+                    if (cleanName) {
+                        // Check if it already exists
+                        let exists = false;
+                        for (let i = 0; i < select.options.length; i++) {
+                            if (select.options[i].value === cleanName) {
+                                exists = true;
+                                select.selectedIndex = i;
+                                break;
+                            }
+                        }
+                        if (!exists) {
+                            // Add new option before "+ Create Namespace..."
+                            const newOpt = document.createElement('option');
+                            newOpt.value = cleanName;
+                            newOpt.innerText = cleanName + '-namespace';
+                            select.insertBefore(newOpt, select.options[select.options.length - 1]);
+                            select.value = cleanName;
+                            
+                            // Save custom namespaces to localStorage
+                            saveCustomNamespaces(cleanName);
+                        }
+                    }
+                } else {
+                    // Reset to default if cancelled
+                    select.value = 'default';
+                }
+            }
+            
+            closeDetails();
+            await fetchTaskList();
+        }
+
+        // Load custom namespaces from LocalStorage
+        function loadCustomNamespaces() {
+            const select = document.getElementById('namespaceSelect');
+            const saved = localStorage.getItem('agyqueue_custom_namespaces');
+            if (saved) {
+                const list = JSON.parse(saved);
+                list.forEach(name => {
+                    let exists = false;
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].value === name) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        const newOpt = document.createElement('option');
+                        newOpt.value = name;
+                        newOpt.innerText = name + '-namespace';
+                        select.insertBefore(newOpt, select.options[select.options.length - 1]);
+                    }
+                });
+            }
+        }
+
+        // Save a custom namespace to LocalStorage
+        function saveCustomNamespaces(name) {
+            let list = [];
+            const saved = localStorage.getItem('agyqueue_custom_namespaces');
+            if (saved) {
+                list = JSON.parse(saved);
+            }
+            if (!list.includes(name)) {
+                list.push(name);
+                localStorage.setItem('agyqueue_custom_namespaces', JSON.stringify(list));
+            }
+        }
+
         // Initial trigger
+        loadCustomNamespaces();
         fetchTaskList();
         setInterval(fetchTaskList, 3000); // refresh list every 3s
     </script>

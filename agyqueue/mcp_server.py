@@ -203,12 +203,13 @@ def start_db_monitor_if_needed():
             pass
 
 @mcp.tool()
-def submit_task(prompt: str, task_type: str = "generic") -> str:
+def submit_task(prompt: str, task_type: str = "generic", namespace: str = "default") -> str:
     """Submit a long-running task to the background queue.
     
     Args:
         prompt: The task instruction or compliance prompt (e.g. 'Validate this k8s manifest')
         task_type: The type of task (e.g., 'manifest_compliance', 'fastapi_gen', 'generic')
+        namespace: The namespace to scope this task under (e.g. 'default', 'production')
         
     Returns:
         A JSON string containing the generated task_id and initial status.
@@ -221,12 +222,13 @@ def submit_task(prompt: str, task_type: str = "generic") -> str:
         task_type=task_type,
         status=TaskStatus.QUEUED,
         progress=0,
-        step="Queued in AgyQueue"
+        step="Queued in AgyQueue",
+        namespace=namespace
     )
     store.save_task(task)
     queue.enqueue(task_id)
     
-    logger.info(f"Submitted task {task_id} of type {task_type}")
+    logger.info(f"Submitted task {task_id} of type {task_type} in namespace {namespace}")
     return json.dumps({
         "task_id": task_id,
         "status": "QUEUED",
@@ -248,6 +250,7 @@ def get_task_status(task_id: str) -> str:
     if not task:
         return json.dumps({"error": f"Task {task_id} not found"}, indent=2)
         
+    completed_at = task.updated_at if task.status in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED) else None
     return json.dumps({
         "task_id": task.task_id,
         "prompt": task.prompt,
@@ -255,7 +258,11 @@ def get_task_status(task_id: str) -> str:
         "status": task.status.value,
         "progress": task.progress,
         "step": task.step,
+        "parent_id": task.parent_id,
+        "namespace": task.namespace,
+        "created_at": task.created_at,
         "updated_at": task.updated_at,
+        "completed_at": completed_at,
         "result": task.result,
         "error": task.error
     }, indent=2)
@@ -291,16 +298,19 @@ def get_task_result(task_id: str) -> str:
     }, indent=2)
 
 @mcp.tool()
-def list_tasks() -> str:
+def list_tasks(namespace: Optional[str] = None) -> str:
     """List all submitted tasks and their current state summaries.
     
+    Args:
+        namespace: Optional namespace filter (e.g. 'default', 'production')
+        
     Returns:
         A JSON string listing all tasks.
     """
     start_db_monitor_if_needed()
-    tasks = store.list_tasks()
+    tasks = store.list_tasks(namespace=namespace)
     if not tasks:
-        return json.dumps({"message": "No tasks in the queue"}, indent=2)
+        return json.dumps([], indent=2)
         
     return json.dumps([
         {
@@ -310,7 +320,10 @@ def list_tasks() -> str:
             "status": t.status.value,
             "progress": t.progress,
             "step": t.step,
-            "created_at": t.created_at
+            "parent_id": t.parent_id,
+            "namespace": t.namespace,
+            "created_at": t.created_at,
+            "updated_at": t.updated_at
         } for t in tasks
     ], indent=2)
 
@@ -378,7 +391,8 @@ async def api_submit_task(request: Request) -> JSONResponse:
         return JSONResponse({"error": "Missing required field: prompt"}, status_code=400)
     
     task_type = data.get("task_type", "generic")
-    res_str = submit_task(prompt, task_type)
+    namespace = data.get("namespace", "default")
+    res_str = submit_task(prompt, task_type, namespace)
     return JSONResponse(json.loads(res_str))
 
 @mcp.custom_route("/api/tasks/{task_id}", methods=["GET"])
@@ -401,7 +415,8 @@ async def api_get_task_result(request: Request) -> JSONResponse:
 
 @mcp.custom_route("/api/tasks", methods=["GET"])
 async def api_list_tasks(request: Request) -> JSONResponse:
-    res_str = list_tasks()
+    namespace = request.query_params.get("namespace")
+    res_str = list_tasks(namespace=namespace)
     return JSONResponse(json.loads(res_str))
 
 @mcp.custom_route("/api/tasks/{task_id}/cancel", methods=["POST"])

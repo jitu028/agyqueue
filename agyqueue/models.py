@@ -23,6 +23,7 @@ class Task:
     result: Optional[str] = None
     error: Optional[str] = None
     parent_id: Optional[str] = None
+    namespace: str = "default"
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None).isoformat())
 

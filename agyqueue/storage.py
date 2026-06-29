@@ -41,8 +41,8 @@ class BaseTaskStore(ABC):
         pass
 
     @abstractmethod
-    def list_tasks(self) -> List[Task]:
-        """Lists all tasks ordered by creation date desc."""
+    def list_tasks(self, namespace: Optional[str] = None) -> List[Task]:
+        """Lists tasks ordered by creation date desc, optionally filtered by namespace."""
         pass
 
     @abstractmethod
@@ -78,6 +78,7 @@ class SQLiteTaskStore(BaseTaskStore):
                     result TEXT,
                     error TEXT,
                     parent_id TEXT,
+                    namespace TEXT NOT NULL DEFAULT 'default',
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 )
@@ -89,7 +90,13 @@ class SQLiteTaskStore(BaseTaskStore):
                 conn.execute("ALTER TABLE tasks ADD COLUMN parent_id TEXT;")
                 conn.commit()
             except sqlite3.OperationalError:
-                # Column already exists
+                pass
+
+            # Schema migration: add namespace if table already existed without it
+            try:
+                conn.execute("ALTER TABLE tasks ADD COLUMN namespace TEXT NOT NULL DEFAULT 'default';")
+                conn.commit()
+            except sqlite3.OperationalError:
                 pass
 
     def save_task(self, task: Task) -> None:
@@ -97,8 +104,8 @@ class SQLiteTaskStore(BaseTaskStore):
             conn.execute(
                 """
                 INSERT OR REPLACE INTO tasks 
-                (task_id, prompt, task_type, status, progress, step, result, error, parent_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (task_id, prompt, task_type, status, progress, step, result, error, parent_id, namespace, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     task.task_id,
@@ -110,6 +117,7 @@ class SQLiteTaskStore(BaseTaskStore):
                     task.result,
                     task.error,
                     task.parent_id,
+                    task.namespace,
                     task.created_at,
                     task.updated_at,
                 ),
@@ -133,6 +141,7 @@ class SQLiteTaskStore(BaseTaskStore):
                 result=row["result"],
                 error=row["error"],
                 parent_id=row["parent_id"],
+                namespace=row["namespace"] if "namespace" in row.keys() else "default",
                 created_at=row["created_at"],
                 updated_at=row["updated_at"],
             )
@@ -168,9 +177,12 @@ class SQLiteTaskStore(BaseTaskStore):
             )
             conn.commit()
 
-    def list_tasks(self) -> List[Task]:
+    def list_tasks(self, namespace: Optional[str] = None) -> List[Task]:
         with self._get_conn() as conn:
-            rows = conn.execute("SELECT * FROM tasks ORDER BY created_at DESC").fetchall()
+            if namespace:
+                rows = conn.execute("SELECT * FROM tasks WHERE namespace = ? ORDER BY created_at DESC", (namespace,)).fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM tasks ORDER BY created_at DESC").fetchall()
             return [
                 Task(
                     task_id=row["task_id"],
@@ -182,6 +194,7 @@ class SQLiteTaskStore(BaseTaskStore):
                     result=row["result"],
                     error=row["error"],
                     parent_id=row["parent_id"],
+                    namespace=row["namespace"] if "namespace" in row.keys() else "default",
                     created_at=row["created_at"],
                     updated_at=row["updated_at"],
                 )
@@ -204,6 +217,7 @@ class SQLiteTaskStore(BaseTaskStore):
                     result=row["result"],
                     error=row["error"],
                     parent_id=row["parent_id"],
+                    namespace=row["namespace"] if "namespace" in row.keys() else "default",
                     created_at=row["created_at"],
                     updated_at=row["updated_at"],
                 )
@@ -258,10 +272,15 @@ class PostgreSQLTaskStore(BaseTaskStore):
                         result TEXT,
                         error TEXT,
                         parent_id VARCHAR(50),
+                        namespace VARCHAR(50) NOT NULL DEFAULT 'default',
                         created_at VARCHAR(30) NOT NULL,
                         updated_at VARCHAR(30) NOT NULL
                     )
                 """)
+                try:
+                    cur.execute("ALTER TABLE tasks ADD COLUMN namespace VARCHAR(50) NOT NULL DEFAULT 'default';")
+                except Exception:
+                    pass
 
     def save_task(self, task: Task) -> None:
         with self._get_conn() as conn:
@@ -269,8 +288,8 @@ class PostgreSQLTaskStore(BaseTaskStore):
                 cur.execute(
                     """
                     INSERT INTO tasks 
-                    (task_id, prompt, task_type, status, progress, step, result, error, parent_id, created_at, updated_at)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    (task_id, prompt, task_type, status, progress, step, result, error, parent_id, namespace, created_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (task_id) DO UPDATE SET
                         prompt = EXCLUDED.prompt,
                         task_type = EXCLUDED.task_type,
@@ -280,6 +299,7 @@ class PostgreSQLTaskStore(BaseTaskStore):
                         result = EXCLUDED.result,
                         error = EXCLUDED.error,
                         parent_id = EXCLUDED.parent_id,
+                        namespace = EXCLUDED.namespace,
                         created_at = EXCLUDED.created_at,
                         updated_at = EXCLUDED.updated_at
                     """,
@@ -293,6 +313,7 @@ class PostgreSQLTaskStore(BaseTaskStore):
                         task.result,
                         task.error,
                         task.parent_id,
+                        task.namespace,
                         task.created_at,
                         task.updated_at,
                     ),
@@ -316,6 +337,7 @@ class PostgreSQLTaskStore(BaseTaskStore):
                     result=row["result"],
                     error=row["error"],
                     parent_id=row["parent_id"],
+                    namespace=row.get("namespace", "default"),
                     created_at=row["created_at"],
                     updated_at=row["updated_at"],
                 )
@@ -351,11 +373,14 @@ class PostgreSQLTaskStore(BaseTaskStore):
                     (now, task_id),
                 )
 
-    def list_tasks(self) -> List[Task]:
+    def list_tasks(self, namespace: Optional[str] = None) -> List[Task]:
         from psycopg2.extras import RealDictCursor
         with self._get_conn() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT * FROM tasks ORDER BY created_at DESC")
+                if namespace:
+                    cur.execute("SELECT * FROM tasks WHERE namespace = %s ORDER BY created_at DESC", (namespace,))
+                else:
+                    cur.execute("SELECT * FROM tasks ORDER BY created_at DESC")
                 rows = cur.fetchall()
                 return [
                     Task(
@@ -368,6 +393,7 @@ class PostgreSQLTaskStore(BaseTaskStore):
                         result=row["result"],
                         error=row["error"],
                         parent_id=row["parent_id"],
+                        namespace=row.get("namespace", "default"),
                         created_at=row["created_at"],
                         updated_at=row["updated_at"],
                     )
@@ -393,6 +419,7 @@ class PostgreSQLTaskStore(BaseTaskStore):
                         result=row["result"],
                         error=row["error"],
                         parent_id=row["parent_id"],
+                        namespace=row.get("namespace", "default"),
                         created_at=row["created_at"],
                         updated_at=row["updated_at"],
                     )
