@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: agyqueue
+  labels:
+    app: worker
+spec:
+  replicas: 2  # Scalable replica set processing tasks in parallel
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: agyqueue-worker:latest  # Assumes image was built with target 'worker'
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: REDIS_URL
+              value: "redis://redis:6379/0"
+            - name: AGYQUEUE_DB_PATH
+              value: "/app/data/agyqueue.db"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 2000m
+              memory: 1Gi
+          volumeMounts:
+            - name: sqlite-storage
+              mountPath: /app/data
+      volumes:
+        - name: sqlite-storage
+          persistentVolumeClaim:
+            claimName: sqlite-pvc

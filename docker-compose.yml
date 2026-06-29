@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: agyqueue_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  mcp-server:
+    build:
+      context: .
+      target: server
+    container_name: agyqueue_mcp_server
+    ports:
+      - "8000:8000"
+    environment:
+      - AGYQUEUE_TRANSPORT=sse
+      - AGYQUEUE_HOST=0.0.0.0
+      - AGYQUEUE_PORT=8000
+      - REDIS_URL=redis://redis:6379/0
+      - AGYQUEUE_DB_PATH=/app/data/agyqueue.db
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      target: worker
+    container_name: agyqueue_worker
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - AGYQUEUE_DB_PATH=/app/data/agyqueue.db
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+volumes:
+  redis_data:

@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+ENV/
+
+# SQLite Databases & WAL logs
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Docker volumes / local data mounts
+data/
+db_data/
+/db/
+/data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Media and videos
+*.mp4
+
+

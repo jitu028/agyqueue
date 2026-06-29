@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgyQueue Workflow Console</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0b0f19;
+            --bg-secondary: #111827;
+            --bg-tertiary: #1f2937;
+            --bg-elevated: #1e293b;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-primary: #6366f1; /* Indigo */
+            --accent-hover: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --border-color: #374151;
+            --sidebar-width: 280px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .brand-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, var(--accent-primary), #3b82f6);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+            font-size: 14px;
+            box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .brand-title {
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+        }
+
+        .brand-badge {
+            font-size: 9px;
+            background-color: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .sidebar-section {
+            padding: 20px 24px 10px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .task-submitter-box {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-group textarea, .form-group select {
+            width: 100%;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 12px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .form-group textarea:focus, .form-group select:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .btn {
+            width: 100%;
+            background-color: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-danger {
+            background-color: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .btn-danger:hover {
+            background-color: var(--danger);
+            color: white;
+        }
+
+        /* Main Console Workspace */
+        .workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background-color: var(--bg-primary);
+        }
+
+        .console-header {
+            height: 69px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .console-path {
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+        }
+
+        .console-path span.active {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        /* Filter Controls */
+        .grid-filters {
+            padding: 20px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            gap: 20px;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-wrapper svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-muted);
+        }
+
+        .search-input {
+            width: 100%;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px 8px 36px;
+            color: var(--text-primary);
+            font-size: 13px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent-primary);
+        }
+
+        .status-tabs {
+            display: flex;
+            background-color: var(--bg-secondary);
+            padding: 3px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-tab {
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-tab.active {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .status-count {
+            font-size: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 1px 6px;
+            border-radius: 10px;
+            color: var(--text-secondary);
+        }
+
+        /* Workflows Grid Panel */
+        .content-panel {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .workflows-grid-container {
+            flex: 1;
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .workflow-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        .workflow-table th {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: rgba(17, 24, 39, 0.4);
+            letter-spacing: 0.05em;
+        }
+
+        .workflow-table td {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+            vertical-align: middle;
+        }
+
+        .workflow-row {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .workflow-row:hover {
+            background-color: rgba(31, 41, 55, 0.3);
+        }
+
+        .workflow-row.selected {
+            background-color: rgba(99, 102, 241, 0.08);
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .workflow-id-col {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 500;
+            color: var(--accent-primary);
+        }
+
+        .workflow-type-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            background-color: var(--bg-tertiary);
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Badges Styling */
+        .status-badge {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge-queued { background-color: rgba(245, 158, 11, 0.1); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.2); }
+        .status-badge-running { background-color: rgba(59, 130, 246, 0.1); color: var(--accent-primary); border: 1px solid rgba(59, 130, 246, 0.2); }
+        .status-badge-waiting { background-color: rgba(129, 140, 248, 0.1); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.2); }
+        .status-badge-completed { background-color: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+        .status-badge-failed { background-color: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+        .status-badge-cancelled { background-color: rgba(107, 114, 128, 0.1); color: var(--text-secondary); border: 1px solid rgba(107, 114, 128, 0.2); }
+
+        /* Details Pane Styling */
+        .details-pane {
+            width: 48%;
+            min-width: 480px;
+            background-color: var(--bg-secondary);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .details-pane-placeholder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            gap: 16px;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .details-pane-placeholder svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--text-muted);
+        }
+
+        .details-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .details-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .details-workflow-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .details-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .details-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            background-color: rgba(17, 24, 39, 0.4);
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .meta-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .meta-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .meta-value-mono {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-primary);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .details-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Timeline Event History */
+        .history-timeline {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .history-timeline::before {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 6px;
+            bottom: 6px;
+            width: 2px;
+            background-color: var(--border-color);
+        }
+
+        .timeline-event {
+            position: relative;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .timeline-event::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+        }
+
+        .timeline-event.active::before {
+            background-color: var(--accent-primary);
+            border-color: #818cf8;
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+        }
+
+        .timeline-event.completed::before {
+            background-color: var(--success);
+            border-color: #34d399;
+        }
+
+        .timeline-event.failed::before {
+            background-color: var(--danger);
+            border-color: #f87171;
+        }
+
+        .event-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .event-name {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .event-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .event-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Tabs Styling */
+        .details-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background-color: rgba(17, 24, 39, 0.4);
+            padding: 0 24px;
+        }
+
+        .tab-btn {
+            padding: 14px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--accent-primary);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .tab-content {
+            display: none;
+            padding: 20px;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Output Viewports */
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12.5px;
+            line-height: 1.6;
+            background-color: #05070c;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            color: #cbd5e1;
+        }
+
+        .result-markdown {
+            line-height: 1.6;
+            color: #cbd5e1;
+            font-size: 13.5px;
+        }
+
+        .result-markdown h1, .result-markdown h2, .result-markdown h3 {
+            color: white;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .result-markdown h1 { font-size: 1.4em; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+        .result-markdown h2 { font-size: 1.2em; }
+        .result-markdown p { margin-bottom: 12px; }
+        .result-markdown code {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: var(--bg-tertiary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fb7185;
+            font-size: 0.9em;
+        }
+
+        .result-markdown pre {
+            background-color: #05070c;
+            border: 1px solid var(--border-color);
+            padding: 14px;
+            border-radius: 6px;
+            margin: 12px 0;
+            overflow-x: auto;
+        }
+        
+        .result-markdown pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+        }
+
+        .progress-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar-glow {
+            height: 6px;
+            background-color: var(--bg-tertiary);
+            border-radius: 3px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--success));
+            width: 0%;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Left Sidebar: Form & Namespace Branding -->
+    <div class="sidebar">
+        <div class="brand-header">
+            <div class="brand-logo">Q</div>
+            <span class="brand-title">AgyQueue</span>
+            <span class="brand-badge">Console</span>
+        </div>
+
+        <div class="sidebar-section">Namespace</div>
+        <div style="padding: 0 20px 20px; border-bottom: 1px solid var(--border-color);">
+            <select style="width: 100%; background-color: var(--bg-primary); border: 1px solid var(--border-color); color: white; padding: 8px; border-radius: 6px; font-size: 12px; outline: none;">
+                <option value="default">default-namespace</option>
+                <option value="production">production-namespace</option>
+            </select>
+        </div>
+
+        <div class="sidebar-section">Start Workflow</div>
+        <form class="task-submitter-box" id="workflowForm">
+            <div class="form-group">
+                <label for="promptInput">Task/Prompt payload</label>
+                <textarea id="promptInput" rows="4" required placeholder="Describe task instructions..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="typeSelect">Workflow Executor</label>
+                <select id="typeSelect">
+                    <option value="generic">generic_runner</option>
+                    <option value="manifest_compliance">manifest_compliance</option>
+                    <option value="fastapi_gen">fastapi_gen</option>
+                    <option value="multi_agent">multi_agent_orchestrator</option>
+                </select>
+            </div>
+            <button type="submit" class="btn">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                </svg>
+                Run Workflow
+            </button>
+        </form>
+    </div>
+
+    <!-- Main Workspace Area -->
+    <div class="workspace">
+        <!-- Header -->
+        <div class="console-header">
+            <div class="console-path">
+                Workflows / <span class="active">runs</span>
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;" id="liveClock">
+                UTC: --:--:--
+            </div>
+        </div>
+
+        <!-- Grid Filter / Actions Bar -->
+        <div class="grid-filters">
+            <div class="search-wrapper">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search by Workflow Run ID..." oninput="filterGrid()">
+            </div>
+
+            <div class="status-tabs" id="statusTabs">
+                <div class="status-tab active" data-status="all" onclick="filterStatus('all')">All <span class="status-count" id="count-all">0</span></div>
+                <div class="status-tab" data-status="running" onclick="filterStatus('running')">Running <span class="status-count" id="count-running">0</span></div>
+                <div class="status-tab" data-status="completed" onclick="filterStatus('completed')">Completed <span class="status-count" id="count-completed">0</span></div>
+                <div class="status-tab" data-status="failed" onclick="filterStatus('failed')">Failed <span class="status-count" id="count-failed">0</span></div>
+            </div>
+        </div>
+
+        <!-- Panel Grid & Details -->
+        <div class="content-panel">
+            <!-- Workflows Grid Table -->
+            <div class="workflows-grid-container">
+                <table class="workflow-table">
+                    <thead>
+                        <tr>
+                            <th>Workflow Run ID</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Start Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workflowGridBody">
+                        <!-- Dynamic grid rows -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Side Details Pane -->
+            <div class="details-pane" id="detailsPane">
+                <div class="details-pane-placeholder" id="detailsPlaceholder">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.375c.9 0 1.625-.725 1.625-1.625V11.25M9 12V9c0-.9.725-1.625 1.625-1.625h2.75C14.275 7.375 15 8.1 15 9v2.25m-6 3h3.75m-3.75 3h.008v.008H12v-.008zm1.5-6h.008v.008H13.5V9.75zm1.5 6h.008v.008H15v-.008zm1.5-3h.008v.008H16.5v-.008z" />
+                    </svg>
+                    <p>Select a workflow run from the grid to inspect event history, payloads, and execution logs.</p>
+                </div>
+
+                <div id="detailsWorkspace" style="display: none; height: 100%; flex-direction: column;">
+                    <!-- Header -->
+                    <div class="details-header">
+                        <div class="details-title-row">
+                            <span class="details-workflow-id" id="detWorkflowId">agy-xxxx</span>
+                            <div class="details-actions">
+                                <button class="btn btn-secondary btn-danger" id="detCancelBtn" style="padding: 6px 12px; font-size: 11px;">Cancel Run</button>
+                            </div>
+                        </div>
+
+                        <div class="details-meta-grid">
+                            <div class="meta-item">
+                                <span class="meta-label">Executor Type</span>
+                                <span class="meta-value" id="detMetaType">generic</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Status</span>
+                                <div><span class="status-badge" id="detMetaBadge">COMPLETED</span></div>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Parent Task</span>
+                                <span class="meta-value" id="detMetaParent">None</span>
+                            </div>
+                            <div class="meta-item">
+                                <span class="meta-label">Start Time</span>
+                                <span class="meta-value" id="detMetaStart">--/-- --:--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Selector -->
+                    <div class="details-tabs">
+                        <button class="tab-btn active" onclick="switchTab('history')">History Events</button>
+                        <button class="tab-btn" onclick="switchTab('result')">Result Output</button>
+                        <button class="tab-btn" onclick="switchTab('payload')">JSON Payload</button>
+                    </div>
+
+                    <!-- Details Body Content -->
+                    <div class="details-body">
+                        <!-- History Timeline Tab -->
+                        <div class="tab-content active" id="tab-history">
+                            <div class="history-timeline" id="detTimeline">
+                                <!-- Dynamic timeline nodes -->
+                            </div>
+                        </div>
+
+                        <!-- Result Output Tab -->
+                        <div class="tab-content" id="tab-result">
+                            <div class="result-markdown" id="detResult">
+                                <!-- Markdown content -->
+                            </div>
+                        </div>
+
+                        <!-- Raw JSON Payload Tab -->
+                        <div class="tab-content" id="tab-payload">
+                            <pre class="code-block" id="detPayload">{}</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentTaskId = null;
+        let pollIntervalId = null;
+        let allTasks = [];
+        let selectedStatusFilter = 'all';
+
+        // Update live clock
+        setInterval(() => {
+            document.getElementById('liveClock').innerText = 'UTC: ' + new Date().toISOString().replace('T', ' ').substring(0, 19);
+        }, 1000);
+
+        // Fetch task list and reload grid
+        async function fetchTaskList() {
+            try {
+                const response = await fetch('/api/tasks');
+                allTasks = await response.json();
+                
+                // Update filter badge counts
+                updateCounts();
+                
+                // Render table based on current filters
+                renderGrid();
+            } catch (err) {
+                console.error("Error fetching tasks:", err);
+            }
+        }
+
+        // Calculate and update dashboard badge counts
+        function updateCounts() {
+            document.getElementById('count-all').innerText = allTasks.length;
+            document.getElementById('count-running').innerText = allTasks.filter(t => ['RUNNING', 'WAITING'].includes(t.status)).length;
+            document.getElementById('count-completed').innerText = allTasks.filter(t => t.status === 'COMPLETED').length;
+            document.getElementById('count-failed').innerText = allTasks.filter(t => t.status === 'FAILED').length;
+        }
+
+        // Render rows based on filter state
+        function renderGrid() {
+            const searchVal = document.getElementById('searchInput').value.toLowerCase();
+            const body = document.getElementById('workflowGridBody');
+            body.innerHTML = '';
+            
+            const filtered = allTasks.filter(task => {
+                // Search filter
+                const matchesSearch = task.task_id.toLowerCase().includes(searchVal);
+                if (!matchesSearch) return false;
+                
+                // Status tab filter
+                if (selectedStatusFilter === 'all') return true;
+                if (selectedStatusFilter === 'running') return ['RUNNING', 'WAITING', 'QUEUED'].includes(task.status);
+                return task.status.toLowerCase() === selectedStatusFilter;
+            });
+            
+            if (filtered.length === 0) {
+                body.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">No matching workflows found.</td></tr>`;
+                return;
+            }
+            
+            filtered.forEach(task => {
+                const isSelected = task.task_id === currentTaskId ? 'selected' : '';
+                const progress = task.progress || 0;
+                const formattedTime = task.created_at ? task.created_at.substring(11, 19) : '--:--:--';
+                
+                const row = document.createElement('tr');
+                row.className = `workflow-row ${isSelected}`;
+                row.onclick = () => selectWorkflow(task.task_id);
+                row.innerHTML = `
+                    <td class="workflow-id-col">${task.task_id}</td>
+                    <td><span class="workflow-type-badge">${task.task_type}</span></td>
+                    <td><span class="status-badge status-badge-${task.status.toLowerCase()}">${task.status}</span></td>
+                    <td style="width: 160px;">
+                        <div class="progress-indicator" style="margin-bottom: 4px;">
+                            <span>Progress</span>
+                            <span>${progress}%</span>
+                        </div>
+                        <div class="progress-bar-glow">
+                            <div class="progress-fill" style="width: ${progress}%"></div>
+                        </div>
+                    </td>
+                    <td style="color: var(--text-secondary); font-family: 'JetBrains Mono', monospace;">${formattedTime}</td>
+                `;
+                body.appendChild(row);
+            });
+        }
+
+        // Handle navigation to workflow selection
+        async function selectWorkflow(taskId) {
+            currentTaskId = taskId;
+            
+            // Re-render table rows to update highlight
+            renderGrid();
+            
+            document.getElementById('detailsPlaceholder').style.display = 'none';
+            document.getElementById('detailsWorkspace').style.display = 'flex';
+            
+            await refreshWorkflowDetails();
+            
+            // Set details refreshing
+            if (pollIntervalId) clearInterval(pollIntervalId);
+            pollIntervalId = setInterval(refreshWorkflowDetails, 1500);
+        }
+
+        // Fetch detailed task state from endpoint
+        async function refreshWorkflowDetails() {
+            if (!currentTaskId) return;
+            
+            try {
+                const response = await fetch(`/api/tasks/${currentTaskId}`);
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        alert("Task not found");
+                        clearInterval(pollIntervalId);
+                        location.reload();
+                    }
+                    return;
+                }
+                const task = await response.json();
+                
+                document.getElementById('detWorkflowId').innerText = task.task_id;
+                document.getElementById('detMetaType').innerText = task.task_type;
+                
+                const badge = document.getElementById('detMetaBadge');
+                badge.innerText = task.status;
+                badge.className = `status-badge status-badge-${task.status.toLowerCase()}`;
+                
+                // Parent Task ID navigation
+                const parentCell = document.getElementById('detMetaParent');
+                if (task.parent_id) {
+                    parentCell.innerText = task.parent_id;
+                    parentCell.className = "meta-value meta-value-mono";
+                    parentCell.onclick = () => selectWorkflow(task.parent_id);
+                } else {
+                    parentCell.innerText = "None";
+                    parentCell.className = "meta-value";
+                    parentCell.onclick = null;
+                }
+                
+                document.getElementById('detMetaStart').innerText = task.updated_at ? task.updated_at.replace('T', ' ').substring(0, 19) : '--/-- --:--';
+                
+                // Show/hide cancel button
+                const cancelBtn = document.getElementById('detCancelBtn');
+                if (['QUEUED', 'RUNNING', 'WAITING'].includes(task.status)) {
+                    cancelBtn.style.display = 'block';
+                    cancelBtn.onclick = () => cancelWorkflow(task.task_id);
+                } else {
+                    cancelBtn.style.display = 'none';
+                }
+                
+                // Update raw payload view
+                document.getElementById('detPayload').innerText = JSON.stringify(task, null, 2);
+                
+                // Update result report
+                const resultTab = document.getElementById('detResult');
+                if (task.status === 'COMPLETED' && task.result) {
+                    resultTab.innerHTML = renderMarkdown(task.result);
+                } else if (task.status === 'FAILED' && task.error) {
+                    resultTab.innerHTML = `<h3 style="color: var(--danger);">Execution Failed</h3><pre class="code-block" style="margin-top: 10px; border-color: rgba(239, 68, 68, 0.4);">${task.error}</pre>`;
+                } else if (task.status === 'CANCELLED') {
+                    resultTab.innerHTML = `<h3 style="color: var(--text-secondary);">Workflow Aborted</h3><p style="margin-top: 8px;">Cancelled by client command. ${task.error || ''}</p>`;
+                } else {
+                    resultTab.innerHTML = `<p style="color: var(--text-muted);">Workflow is still running. Reports are available upon completion.</p>`;
+                }
+                
+                // Build history event log to show execution milestones
+                buildTimelineEvents(task);
+                
+            } catch (err) {
+                console.error("Error refreshing task details:", err);
+            }
+        }
+
+        // Render vertical timeline history events list
+        function buildTimelineEvents(task) {
+            const timeline = document.getElementById('detTimeline');
+            timeline.innerHTML = '';
+            
+            // Event 1: Workflow Started
+            const ev1 = createTimelineNode("WorkflowExecutionStarted", task.updated_at, "Task enqueued inside the AgyQueue task broker. Status transitioned to QUEUED.", "completed");
+            timeline.appendChild(ev1);
+            
+            // Event 2: Worker Picked Up (if running or completed)
+            if (task.status !== 'QUEUED') {
+                const ev2 = createTimelineNode("WorkflowTaskStarted", task.updated_at, "Background worker picked up payload and initialized isolation workspace worktree directory.", "completed");
+                timeline.appendChild(ev2);
+            }
+            
+            // Event 3: Workflow Step updates
+            if (task.step && task.step !== "Queued in AgyQueue") {
+                const isFinal = ['COMPLETED', 'FAILED', 'CANCELLED'].includes(task.status);
+                const ev3 = createTimelineNode("WorkflowTaskScheduled", task.updated_at, `Current executing task step log: "${task.step}" (Progress: ${task.progress}%)`, isFinal ? "completed" : "active");
+                timeline.appendChild(ev3);
+            }
+            
+            // Event 4: Terminal execution event
+            if (task.status === 'COMPLETED') {
+                const ev4 = createTimelineNode("WorkflowExecutionCompleted", task.updated_at, "Task finished execution successfully. Results aggregated and saved to persistent store.", "completed");
+                timeline.appendChild(ev4);
+            } else if (task.status === 'FAILED') {
+                const ev4 = createTimelineNode("WorkflowExecutionFailed", task.updated_at, `Execution crashed. Error message: "${task.error || 'Unknown execution error'}"`, "failed");
+                timeline.appendChild(ev4);
+            } else if (task.status === 'CANCELLED') {
+                const ev4 = createTimelineNode("WorkflowExecutionCancelled", task.updated_at, "Workflow execution terminated cleanly via API cancellation signal.", "failed");
+                timeline.appendChild(ev4);
+            }
+        }
+
+        function createTimelineNode(name, time, description, stateClass) {
+            const node = document.createElement('div');
+            node.className = `timeline-event ${stateClass}`;
+            node.innerHTML = `
+                <div class="event-header">
+                    <span class="event-name">${name}</span>
+                    <span class="event-time">${time ? time.substring(11, 19) : ''}</span>
+                </div>
+                <div class="event-desc">${description}</div>
+            `;
+            return node;
+        }
+
+        // Cancel workflow request
+        async function cancelWorkflow(taskId) {
+            if (!confirm(`Abort workflow execution run ${taskId}?`)) return;
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/cancel`, { method: 'POST' });
+                if (response.ok) {
+                    await refreshWorkflowDetails();
+                    await fetchTaskList();
+                } else {
+                    alert("Failed to abort workflow");
+                }
+            } catch (err) {
+                console.error("Error cancelling workflow:", err);
+            }
+        }
+
+        // Form Submit
+        document.getElementById('workflowForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const prompt = document.getElementById('promptInput').value;
+            const task_type = document.getElementById('typeSelect').value;
+            
+            try {
+                const response = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, task_type })
+                });
+                
+                if (response.ok) {
+                    const task = await response.json();
+                    document.getElementById('promptInput').value = '';
+                    await fetchTaskList();
+                    selectWorkflow(task.task_id);
+                } else {
+                    alert("Failed to submit task");
+                }
+            } catch (err) {
+                console.error("Error submitting task:", err);
+            }
+        };
+
+        // Filter by Status Tab
+        function filterStatus(status) {
+            selectedStatusFilter = status;
+            
+            const tabs = document.querySelectorAll('.status-tab');
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-status') === status) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            renderGrid();
+        }
+
+        // Search text filter
+        function filterGrid() {
+            renderGrid();
+        }
+
+        // Tab selection switching
+        function switchTab(tabId) {
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(tabId)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                if (content.id === `tab-${tabId}`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+
+        // Render basic markdown formatting
+        function renderMarkdown(md) {
+            if (!md) return "";
+            return md
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") // escape HTML
+                .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                .replace(/- \[(x| )\] (.*$)/gim, (m, check, text) => {
+                    const checked = check === 'x' ? 'checked disabled' : 'disabled';
+                    return `<div><input type="checkbox" ${checked}> ${text}</div>`;
+                })
+                .replace(/^- (.*$)/gim, '<li>$1</li>')
+                .replace(/\n\n/g, '<p></p>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // Initial trigger
+        fetchTaskList();
+        setInterval(fetchTaskList, 3000); // refresh list every 3s
+    </script>
+</body>
+</html>

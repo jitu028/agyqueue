@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agyqueue"
+version = "0.1.0"
+description = "A pluggable, non-blocking asynchronous task queue and MCP server for AI Agents"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Jitendra Gupta"}
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "redis>=5.0.0",
+    "starlette>=0.30.0",
+    "uvicorn>=0.20.0",
+    "psycopg2-binary>=2.9.0"
+]
+
+[project.scripts]
+agyqueue = "agyqueue.mcp_server:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agyqueue*"]
+
+[tool.setuptools.package-data]
+agyqueue = ["dashboard.html"]
+

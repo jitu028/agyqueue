@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sqlite-pvc
+  namespace: agyqueue
+spec:
+  accessModes:
+    - ReadWriteMany  # Requires Filestore / NFS on GKE to allow concurrent writes from server and worker pods
+  resources:
+    requests:
+      storage: 2Gi

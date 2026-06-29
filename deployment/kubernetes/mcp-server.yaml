@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-server
+  namespace: agyqueue
+  labels:
+    app: mcp-server
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+      name: http
+  selector:
+    app: mcp-server
+  type: ClusterIP  # Can be changed to LoadBalancer or exposed via Ingress in production
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-server
+  namespace: agyqueue
+  labels:
+    app: mcp-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-server
+  template:
+    metadata:
+      labels:
+        app: mcp-server
+    spec:
+      containers:
+        - name: server
+          image: agyqueue:latest  # Assumes image was built with target 'server'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: AGYQUEUE_TRANSPORT
+              value: "sse"
+            - name: AGYQUEUE_HOST
+              value: "0.0.0.0"
+            - name: AGYQUEUE_PORT
+              value: "8000"
+            - name: REDIS_URL
+              value: "redis://redis:6379/0"
+            - name: AGYQUEUE_DB_PATH
+              value: "/app/data/agyqueue.db"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /api/tasks
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/tasks
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: sqlite-storage
+              mountPath: /app/data
+      volumes:
+        - name: sqlite-storage
+          persistentVolumeClaim:
+            claimName: sqlite-pvc
