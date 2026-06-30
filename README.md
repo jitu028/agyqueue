@@ -89,13 +89,13 @@ Navigate to [http://localhost:8000/dashboard](http://localhost:8000/dashboard) t
 
 ## 📁 Examples & Client Integrations
 
-The [examples/](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/) folder contains detailed client scripts for every connection method:
+The [examples/](examples/) folder contains detailed client scripts for every connection method:
 
-* **Antigravity 2.0 SDK**: [examples/antigravity_agent_sdk.py](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/antigravity_agent_sdk.py) shows how to bind tools to a `google.antigravity` agent.
-* **Google ADK Agents**: [examples/google_adk_agent.py](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/google_adk_agent.py) demonstrates tool binding in the `google.adk.agents` framework.
-* **StdIO MCP Client**: [examples/mcp_stdio_client.py](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/mcp_stdio_client.py) connects programmatically via stdin/stdout subprocesses.
-* **SSE MCP Client**: [examples/mcp_sse_client.py](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/mcp_sse_client.py) connects over network Server-Sent Events.
-* **Direct REST SDK**: [examples/rest_client_sdk_demo.py](file:///Users/jitendragupta/Documents/github-repo/agyqueue/examples/rest_client_sdk_demo.py) performs calls using the lightweight `AgyQueueClient` Python client.
+* **Antigravity 2.0 SDK**: [examples/antigravity_agent_sdk.py](examples/antigravity_agent_sdk.py) shows how to bind tools to a `google.antigravity` agent.
+* **Google ADK Agents**: [examples/google_adk_agent.py](examples/google_adk_agent.py) demonstrates tool binding in the `google.adk.agents` framework.
+* **StdIO MCP Client**: [examples/mcp_stdio_client.py](examples/mcp_stdio_client.py) connects programmatically via stdin/stdout subprocesses.
+* **SSE MCP Client**: [examples/mcp_sse_client.py](examples/mcp_sse_client.py) connects over network Server-Sent Events.
+* **Direct REST SDK**: [examples/rest_client_sdk_demo.py](examples/rest_client_sdk_demo.py) performs calls using the lightweight `AgyQueueClient` Python client.
 
 ---
 
@@ -126,21 +126,38 @@ orchestrator_agent = Agent(
 )
 ```
 
-### 2. Registering with Gemini Enterprise & Agent Registry
-Expose the deployed URL to Gemini Enterprise using the `agents-cli` tool:
+### 2. Registering with Agent Registry as MCP Server
+To register AgyQueue with your Google Cloud Agent Registry as an MCP server, run the following:
 ```bash
 agents-cli publish gemini-enterprise \
-  --name "agyqueue-service" \
-  --description "Exposes asynchronous background task execution, cancellation, and progress tracking tools." \
-  --url "https://agyqueue-server-dev-xxxx-uc.a.run.app/sse" \
+  --name "agyqueue" \
+  --description "A pluggable, non-blocking asynchronous task queue and MCP server for AI Agents." \
+  --url "https://<your-agyqueue-server-url>/sse" \
   --type "mcp"
 ```
 
+For the **Gemini CLI / Antigravity CLI (`agy`)**, you can install this repository directly as a fully compatible local/remote extension by running:
+```bash
+agy plugin install .agents
+```
+*(The repository is configured as a native Gemini extension via `gemini-extension.json` and `.agents/` metadata).*
+
 ---
 
-## 💻 Local IDE Integration (MCP)
+## 💻 Local IDE & AI CLI Integration (MCP)
 
-### Claude Desktop Configuration
+To make it incredibly easy for anyone cloning or using this repository, we have provided pre-configured JSON snippets and integration files for all major AI-based development platforms inside the `mcp-configs/` directory.
+
+### 🚀 Direct Integration Files
+*   **Claude Code CLI**: Add the server config in `mcp-configs/claude_code_config.json` to your `~/.config/claude-code/mcp.json`.
+*   **Claude Desktop**: Copy the snippet in `mcp-configs/claude_desktop_config.json` to your `claude_desktop_config.json`.
+*   **Cursor IDE**: Add a new MCP server in Cursor Settings under **Features -> MCP** using the parameters specified in `mcp-configs/cursor_config.json`.
+*   **Windsurf IDE**: Add the server config in `mcp-configs/windsurf_config.json` to your `~/.codeium/windsurf/mcp_config.json`.
+*   **VS Code (Cline / Roo Code / Copilot / Codex / others)**: Append the server config in `mcp-configs/copilot_config.json` to your `cline_mcp_settings.json` or Copilot MCP configuration.
+
+### 🛠️ Configuration Quick-Reference
+
+#### Claude Desktop Configuration
 Add the following to your `claude_desktop_config.json` (located in `~/Library/Application Support/Claude/` on macOS):
 ```json
 {
@@ -158,16 +175,10 @@ Add the following to your `claude_desktop_config.json` (located in `~/Library/Ap
 }
 ```
 
-### Cursor Configuration
-1. Open Cursor Settings -> Features -> MCP.
-2. Click **+ Add New MCP Server**.
-3. Configure:
-   * **Name**: `AgyQueue`
-   * **Type**: `command`
-   * **Command**: `PYTHONPATH=. .venv/bin/python -m agyqueue.mcp_server` (relative to your repo path).
+#### Gemini CLI & Antigravity CLI Configuration
+To configure AgyQueue as an MCP server inside your global Gemini/Antigravity CLI settings (located at `~/.gemini/GEMINI.md` or user preferences), append the server config under the `"mcpServers"` dictionary:
 
-### VS Code Configuration (Cline / Roo Code Extensions)
-Append the AgyQueue stdio server configuration to `cline_mcp_settings.json`:
+##### Option A: Local StdIO Execution
 ```json
 {
   "mcpServers": {
@@ -184,8 +195,64 @@ Append the AgyQueue stdio server configuration to `cline_mcp_settings.json`:
 }
 ```
 
-### Claude Code CLI Integration
-Add AgyQueue as a local tool under the `"mcpServers"` dictionary in `~/.config/claude-code/mcp.json`.
+##### Option B: Remote SSE (Server-Sent Events) Service
+```json
+{
+  "mcpServers": {
+    "agyqueue": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/client-sse",
+        "https://<your-agyqueue-server-url>/sse"
+      ]
+    }
+  }
+}
+```
+
+#### Cursor Configuration
+1. Open Cursor Settings -> Features -> MCP.
+2. Click **+ Add New MCP Server**.
+3. Configure:
+   * **Name**: `AgyQueue`
+   * **Type**: `command`
+   * **Command**: `PYTHONPATH=. .venv/bin/python -m agyqueue.mcp_server` (relative to your repo path).
+
+#### VS Code Configuration (Cline / Roo Code / Copilot / Codex)
+Append the AgyQueue stdio server configuration to your MCP settings file:
+```json
+{
+  "mcpServers": {
+    "agyqueue": {
+      "command": "python",
+      "args": ["-m", "agyqueue.mcp_server"],
+      "env": {
+        "PYTHONPATH": "/absolute/path/to/your/agyqueue/repo",
+        "AGYQUEUE_TRANSPORT": "stdio",
+        "AGYQUEUE_DB_PATH": "/absolute/path/to/your/agyqueue/repo/agyqueue.db"
+      }
+    }
+  }
+}
+```
+
+#### Claude Code CLI Integration
+Add AgyQueue as a local tool under the `"mcpServers"` dictionary in `~/.config/claude-code/mcp.json` using the SSE endpoint:
+```json
+{
+  "mcpServers": {
+    "agyqueue": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/client-sse",
+        "https://<your-agyqueue-server-url>/sse"
+      ]
+    }
+  }
+}
+```
 
 ---
 
@@ -220,30 +287,11 @@ To run the complete system with Redis queues and PostgreSQL stores:
 
 ## ☁️ Cloud Deployment (Cloud Run & GKE)
 
-For Google Cloud production environments, configuration templates are located in [deployment/](file:///Users/jitendragupta/Documents/github-repo/agyqueue/deployment/):
+For Google Cloud production environments, configuration templates are located in [deployment/](deployment/):
 * **Cloud Run**: Serverless container setups with Memorystore Redis and Cloud SQL PostgreSQL.
 * **GKE**: Scalable Kubernetes microservices with Horizontal Pod Autoscalers (HPA).
 
 ---
-
-## 🔔 Slack & Email Notifications
-
-To configure alerts on task completion or failure, set the following environment variables:
-```bash
-# Enable channels (comma-separated list)
-export AGYQUEUE_NOTIFICATIONS="slack,email"
-
-# 1. Slack Webhook Configuration
-export SLACK_WEBHOOK_URL="https://example.com/slack-webhook-url"
-
-# 2. Email SMTP Configuration
-export SMTP_HOST="smtp.gmail.com"
-export SMTP_PORT="587"
-export SMTP_USER="your-email@gmail.com"
-export SMTP_PASSWORD="your-app-password"
-export SMTP_FROM="noreply@agyqueue.internal"
-export SMTP_TO="recipient-alert-inbox@domain.com"
-```
 
 ---
 

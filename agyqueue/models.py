@@ -24,8 +24,13 @@ class Task:
     error: Optional[str] = None
     parent_id: Optional[str] = None
     namespace: str = "default"
+    current_attempt: int = 1
+    max_attempts: int = 3
+    worker_id: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None).isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).replace(tzinfo=None).isoformat())
+    approver_name: Optional[str] = None
+    approver_email: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

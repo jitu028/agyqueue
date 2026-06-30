@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "agyqueue-sse": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/client-sse",
+        "https://<your-agyqueue-server-url>/sse"
+      ]
+    }
+  }
+}

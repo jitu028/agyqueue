@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "agyqueue-sse": {
+      "name": "AgyQueue SSE",
+      "type": "command",
+      "command": "npx -y @modelcontextprotocol/client-sse https://<your-agyqueue-server-url>/sse"
+    },
+    "agyqueue-local": {
+      "name": "AgyQueue Local",
+      "type": "command",
+      "command": "PYTHONPATH=. .venv/bin/python -m agyqueue.mcp_server"
+    }
+  }
+}

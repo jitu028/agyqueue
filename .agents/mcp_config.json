@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "agyqueue": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "supergateway",
+        "--sse",
+        "https://<your-agyqueue-server-url>/sse"
+      ]
+    }
+  }
+}

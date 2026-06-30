@@ -32,4 +32,27 @@ build/
 # Media and videos
 *.mp4
 
+# Local configurations / secrets
+.env
+.env.*
+!.env.example
+
+# Node / JS
+node_modules/
+package-lock.json
+package.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.tfvars
+.terraform.lock.hcl
+
+# Development / IDE / temp files
+*.code-workspace
+discovery.json
+
+
 

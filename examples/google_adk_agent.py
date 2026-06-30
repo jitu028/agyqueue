@@ -35,11 +35,26 @@ def run_adk_orchestration_flow():
     user_prompt = "Validate my Kubernetes deployment.yaml configuration for security compliance."
     print(f"\n[User]: {user_prompt}")
     
-    # 3. Get response from ADK Agent
-    response = agent.generate_response(user_prompt)
-    
-    print("\n[ADK Agent Response]:")
-    print(response.text)
-    
+    # 3. Run the agent using the ADK Runner
+    from google.adk.runners import Runner
+    from google.adk.sessions import InMemorySessionService
+    from google.genai import types
+
+    async def run_agent():
+        session_service = InMemorySessionService()
+        await session_service.create_session(app_name="app", user_id="user", session_id="s1")
+        runner = Runner(agent=agent, app_name="app", session_service=session_service)
+        
+        print("\n[ADK Agent Response]:")
+        async for event in runner.run_async(
+            user_id="user",
+            session_id="s1",
+            new_message=types.Content(role="user", parts=[types.Part.from_text(text=user_prompt)])
+        ):
+            if event.is_final_response():
+                print(event.content.parts[0].text)
+
+    asyncio.run(run_agent())
+
 if __name__ == "__main__":
     run_adk_orchestration_flow()

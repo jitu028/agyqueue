@@ -61,7 +61,7 @@ class AgyQueueClient:
         start_time = time.time()
         while time.time() - start_time < timeout:
             status_res = self.get_task_status(task_id)
-            if "error" in status_res:
+            if "error" in status_res and status_res["error"] is not None:
                 return status_res
                 
             status = status_res.get("status")

@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "agyqueue-sse": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/client-sse",
+        "https://<your-agyqueue-server-url>/sse"
+      ]
+    },
+    "agyqueue-local": {
+      "command": "python",
+      "args": ["-m", "agyqueue.mcp_server"],
+      "env": {
+        "PYTHONPATH": "${PWD}",
+        "AGYQUEUE_TRANSPORT": "stdio",
+        "AGYQUEUE_DB_PATH": "${PWD}/agyqueue.db"
+      }
+    }
+  }
+}

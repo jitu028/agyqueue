@@ -174,6 +174,17 @@
             color: white;
         }
 
+        .btn-success {
+            background-color: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #a7f3d0;
+        }
+
+        .btn-success:hover {
+            background-color: var(--success);
+            color: white;
+        }
+
         /* Main Console Workspace */
         .workspace {
             flex: 1;
@@ -181,6 +192,7 @@
             flex-direction: column;
             height: 100%;
             background-color: var(--bg-primary);
+            min-width: 0; /* Prevents parent stretching by wide children */
         }
 
         .console-header {
@@ -288,6 +300,7 @@
             flex: 1;
             display: flex;
             overflow: hidden;
+            min-width: 0; /* Prevents parent stretching by wide children */
         }
 
         .workflows-grid-container {
@@ -376,12 +389,15 @@
         /* Details Pane Styling */
         .details-pane {
             width: 48%;
+            max-width: 48%;
             min-width: 480px;
+            flex-shrink: 0;
             background-color: var(--bg-secondary);
             display: none; /* Hidden by default, toggled via JS on select */
             flex-direction: column;
             overflow: hidden;
             height: 100%;
+            border-left: 1px solid var(--border-color);
         }
 
         .details-pane-placeholder {
@@ -581,6 +597,7 @@
             background-color: var(--bg-primary);
             border: 1px solid var(--border-color);
             border-radius: 8px;
+            max-width: 100%;
         }
 
         .tab-content.active {
@@ -598,6 +615,7 @@
             padding: 16px;
             overflow-x: auto;
             color: #cbd5e1;
+            max-width: 100%;
         }
 
         .result-markdown {
@@ -694,11 +712,21 @@
             <div class="form-group">
                 <label for="typeSelect">Workflow Executor</label>
                 <select id="typeSelect">
-                    <option value="generic">generic_runner</option>
-                    <option value="manifest_compliance">manifest_compliance</option>
-                    <option value="fastapi_gen">fastapi_gen</option>
-                    <option value="multi_agent">multi_agent_orchestrator</option>
+                    <option value="generic">GENERIC_AGENT</option>
+                    <option value="manifest_compliance">SRE_COMPLIANCE</option>
+                    <option value="fastapi_gen">CODE_GENERATOR</option>
+                    <option value="multi_agent_deploy">MULTI_AGENT_ORCHESTRATOR</option>
                 </select>
+            </div>
+            <div id="approverConfig" style="display: none; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 12px; margin-top: 12px; margin-bottom: 12px;">
+                <div class="form-group">
+                    <label for="approverNameInput">Approver Name</label>
+                    <input type="text" id="approverNameInput" placeholder="SRE Release Manager" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: var(--text-primary); font-size: 11px; margin-top: 4px;">
+                </div>
+                <div class="form-group" style="margin-top: 8px;">
+                    <label for="approverEmailInput">Approver Email</label>
+                    <input type="email" id="approverEmailInput" placeholder="approver@example.com" style="width: 100%; padding: 8px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; color: var(--text-primary); font-size: 11px; margin-top: 4px;">
+                </div>
             </div>
             <button type="submit" class="btn">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -746,6 +774,7 @@
                     <thead>
                         <tr>
                             <th>Workflow Run ID</th>
+                            <th>Workflow Name</th>
                             <th>Type</th>
                             <th>Status</th>
                             <th>Progress</th>
@@ -774,6 +803,9 @@
                             <span class="details-workflow-id" id="detWorkflowId">agy-xxxx</span>
                             <div class="details-actions" style="display: flex; gap: 8px;">
                                 <button class="btn btn-secondary btn-danger" id="detCancelBtn" style="padding: 6px 12px; font-size: 11px; width: auto;">Cancel Run</button>
+                                <button class="btn btn-secondary btn-success" id="detRetryBtn" style="padding: 6px 12px; font-size: 11px; width: auto; display: none;">Retry Run</button>
+                                <button class="btn btn-secondary btn-success" id="detApproveBtn" style="padding: 6px 12px; font-size: 11px; width: auto; display: none; background-color: var(--success); border-color: var(--success);">Approve</button>
+                                <button class="btn btn-secondary btn-danger" id="detRejectBtn" style="padding: 6px 12px; font-size: 11px; width: auto; display: none; background-color: var(--danger); border-color: var(--danger);">Reject</button>
                                 <button class="btn btn-secondary" onclick="closeDetails()" style="padding: 6px 10px; font-size: 11px; width: auto; display: flex; align-items: center; justify-content: center;" title="Close Panel">
                                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -807,12 +839,19 @@
                                 <span class="meta-label">End Time</span>
                                 <span class="meta-value" id="detMetaEnd">--/-- --:--</span>
                             </div>
+                            <div class="meta-item" id="detMetaReviewRow" style="display: none; grid-column: span 2; border: 1px dashed rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.05);">
+                                <span class="meta-label" style="color: var(--accent-primary);">Manual Approval Required</span>
+                                <a id="detMetaReviewLink" href="#" target="_blank" style="color: #60a5fa; font-size: 13px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; margin-top: 4px;">
+                                    Open Direct Review Page & Approve/Reject →
+                                </a>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Tabs Selector -->
                     <div class="details-tabs">
                         <button class="tab-btn active" onclick="switchTab('history')">History Events</button>
+                        <button class="tab-btn" onclick="switchTab('artifacts')">Artifacts</button>
                         <button class="tab-btn" onclick="switchTab('result')">Result Output</button>
                         <button class="tab-btn" onclick="switchTab('payload')">JSON Payload</button>
                     </div>
@@ -823,6 +862,13 @@
                         <div class="tab-content active" id="tab-history">
                             <div class="history-timeline" id="detTimeline">
                                 <!-- Dynamic timeline nodes -->
+                            </div>
+                        </div>
+
+                        <!-- Artifacts Tab -->
+                        <div class="tab-content" id="tab-artifacts">
+                            <div style="display: flex; flex-direction: column; gap: 12px; padding: 8px;" id="detArtifactsList">
+                                <span style="color: var(--text-muted); font-size: 13px;">No artifacts found.</span>
                             </div>
                         </div>
 
@@ -848,10 +894,23 @@
         let pollIntervalId = null;
         let allTasks = [];
         let selectedStatusFilter = 'all';
+        let lastArtifactsTaskId = null;
+        let lastArtifactsStatus = null;
 
-        // Update live clock
+        // Helper to format Date objects as local timestamp YYYY-MM-DD HH:MM:SS
+        function getLocalTimeString(date) {
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, '0');
+            const dd = String(date.getDate()).padStart(2, '0');
+            const hh = String(date.getHours()).padStart(2, '0');
+            const min = String(date.getMinutes()).padStart(2, '0');
+            const ss = String(date.getSeconds()).padStart(2, '0');
+            return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+        }
+
+        // Update live clock in local time
         setInterval(() => {
-            document.getElementById('liveClock').innerText = 'UTC: ' + new Date().toISOString().replace('T', ' ').substring(0, 19);
+            document.getElementById('liveClock').innerText = 'Local Time: ' + getLocalTimeString(new Date());
         }, 1000);
 
         // Fetch task list and reload grid
@@ -905,13 +964,20 @@
             filtered.forEach(task => {
                 const isSelected = task.task_id === currentTaskId ? 'selected' : '';
                 const progress = task.progress || 0;
-                const formattedTime = task.created_at ? task.created_at.substring(11, 19) : '--:--:--';
+                // Convert UTC time from server to browser's local timezone
+                let formattedTime = '--:--:--';
+                if (task.created_at) {
+                    const utcStr = task.created_at.endsWith('Z') ? task.created_at : task.created_at + 'Z';
+                    const date = new Date(utcStr);
+                    formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                }
                 
                 const row = document.createElement('tr');
                 row.className = `workflow-row ${isSelected}`;
                 row.onclick = () => selectWorkflow(task.task_id);
                 row.innerHTML = `
                     <td class="workflow-id-col">${task.task_id}</td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${task.prompt}">${task.prompt}</td>
                     <td><span class="workflow-type-badge">${task.task_type}</span></td>
                     <td><span class="status-badge status-badge-${task.status.toLowerCase()}">${task.status}</span></td>
                     <td style="width: 160px;">
@@ -976,6 +1042,12 @@
                 }
                 const task = await response.json();
                 
+                if (lastArtifactsTaskId !== task.task_id || lastArtifactsStatus !== task.status) {
+                    lastArtifactsTaskId = task.task_id;
+                    lastArtifactsStatus = task.status;
+                    fetchWorkflowArtifacts(task.task_id);
+                }
+                
                 document.getElementById('detWorkflowId').innerText = task.task_id;
                 document.getElementById('detMetaType').innerText = task.task_type;
                 
@@ -999,7 +1071,8 @@
                 
                 const formatTime = (isoStr) => {
                     if (!isoStr) return '--/-- --:--';
-                    return isoStr.replace('T', ' ').substring(0, 19);
+                    const utcStr = isoStr.endsWith('Z') ? isoStr : isoStr + 'Z';
+                    return getLocalTimeString(new Date(utcStr));
                 };
                 
                 document.getElementById('detMetaStart').innerText = formatTime(task.created_at);
@@ -1012,6 +1085,38 @@
                     cancelBtn.onclick = () => cancelWorkflow(task.task_id);
                 } else {
                     cancelBtn.style.display = 'none';
+                }
+                
+                // Show/hide approve/reject buttons
+                const approveBtn = document.getElementById('detApproveBtn');
+                const rejectBtn = document.getElementById('detRejectBtn');
+                if (task.status === 'WAITING') {
+                    approveBtn.style.display = 'block';
+                    approveBtn.onclick = () => approveWorkflow(task.task_id);
+                    rejectBtn.style.display = 'block';
+                    rejectBtn.onclick = () => rejectWorkflow(task.task_id);
+                } else {
+                    approveBtn.style.display = 'none';
+                    rejectBtn.style.display = 'none';
+                }
+                
+                // Show/hide review page link
+                const reviewRow = document.getElementById('detMetaReviewRow');
+                const reviewLink = document.getElementById('detMetaReviewLink');
+                if (task.status === 'WAITING') {
+                    reviewRow.style.display = 'block';
+                    reviewLink.href = `/review/${task.task_id}`;
+                } else {
+                    reviewRow.style.display = 'none';
+                }
+                
+                // Show/hide retry button
+                const retryBtn = document.getElementById('detRetryBtn');
+                if (['COMPLETED', 'FAILED', 'CANCELLED'].includes(task.status)) {
+                    retryBtn.style.display = 'block';
+                    retryBtn.onclick = () => retryWorkflow(task);
+                } else {
+                    retryBtn.style.display = 'none';
                 }
                 
                 // Update raw payload view
@@ -1101,6 +1206,85 @@
             }
         }
 
+        // Retry workflow request
+        async function retryWorkflow(task) {
+            if (!confirm(`Retry workflow execution for task ${task.task_id}?`)) return;
+            try {
+                const response = await fetch('/api/tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: task.prompt.startsWith("Retry deployment pipeline") ? task.prompt : `Retry deployment pipeline: ${task.prompt}`,
+                        task_type: task.task_type,
+                        namespace: task.namespace
+                    })
+                });
+                
+                if (response.ok) {
+                    const newTask = await response.json();
+                    await fetchTaskList();
+                    selectWorkflow(newTask.task_id);
+                } else {
+                    alert("Failed to submit retry task");
+                }
+            } catch (err) {
+                console.error("Error retrying workflow:", err);
+            }
+        }
+
+        // Approve workflow signal request
+        async function approveWorkflow(taskId) {
+            if (!confirm(`Approve and resume workflow run ${taskId}?`)) return;
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/signal`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ signal_name: 'approve', payload: 'Approved via UI Dashboard' })
+                });
+                if (response.ok) {
+                    await refreshWorkflowDetails();
+                    await fetchTaskList();
+                } else {
+                    alert("Failed to send approval signal");
+                }
+            } catch (err) {
+                console.error("Error approving workflow:", err);
+            }
+        }
+
+        // Reject workflow signal and cancellation request
+        async function rejectWorkflow(taskId) {
+            if (!confirm(`Reject and abort workflow run ${taskId}?`)) return;
+            try {
+                // Send reject signal for logging
+                await fetch(`/api/tasks/${taskId}/signal`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ signal_name: 'reject', payload: 'Rejected via UI Dashboard' })
+                });
+                // Terminate/cancel task
+                const response = await fetch(`/api/tasks/${taskId}/cancel`, { method: 'POST' });
+                if (response.ok) {
+                    await refreshWorkflowDetails();
+                    await fetchTaskList();
+                } else {
+                    alert("Failed to abort workflow");
+                }
+            } catch (err) {
+                console.error("Error rejecting workflow:", err);
+            }
+        }
+
+        // Setup dynamic form fields
+        document.getElementById('typeSelect').onchange = (e) => {
+            const approverDiv = document.getElementById('approverConfig');
+            if (e.target.value === 'manifest_compliance') {
+                approverDiv.style.display = 'block';
+            } else {
+                approverDiv.style.display = 'none';
+            }
+        };
+
         // Form Submit
         document.getElementById('workflowForm').onsubmit = async (e) => {
             e.preventDefault();
@@ -1108,16 +1292,27 @@
             const task_type = document.getElementById('typeSelect').value;
             const namespace = document.getElementById('namespaceSelect').value;
             
+            const payload = { prompt, task_type, namespace };
+            if (task_type === 'manifest_compliance') {
+                payload.approver_name = document.getElementById('approverNameInput').value;
+                payload.approver_email = document.getElementById('approverEmailInput').value;
+            }
+            
             try {
                 const response = await fetch('/api/tasks', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, task_type, namespace })
+                    body: JSON.stringify(payload)
                 });
                 
                 if (response.ok) {
                     const task = await response.json();
                     document.getElementById('promptInput').value = '';
+                    if (document.getElementById('approverNameInput')) {
+                        document.getElementById('approverNameInput').value = '';
+                        document.getElementById('approverEmailInput').value = '';
+                        document.getElementById('approverConfig').style.display = 'none';
+                    }
                     await fetchTaskList();
                     selectWorkflow(task.task_id);
                 } else {
@@ -1127,6 +1322,131 @@
                 console.error("Error submitting task:", err);
             }
         };
+
+        async function fetchWorkflowArtifacts(taskId) {
+            const container = document.getElementById('detArtifactsList');
+            if (!container) return;
+            
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/artifacts`);
+                if (response.ok) {
+                    const data = await response.json();
+                    container.innerHTML = '';
+                    
+                    if (!data.artifacts || data.artifacts.length === 0) {
+                        container.innerHTML = '<span style="color: var(--text-muted); font-size: 13px; padding: 12px; display: block;">No artifacts generated for this task.</span>';
+                        return;
+                    }
+                    
+                    data.artifacts.forEach(file => {
+                        const fileUrl = `/api/tasks/${taskId}/artifacts/${file}`;
+                        const ext = file.split('.').pop().toLowerCase();
+                        
+                        const itemDiv = document.createElement('div');
+                        itemDiv.style.background = 'rgba(0,0,0,0.15)';
+                        itemDiv.style.border = '1px solid var(--border-color)';
+                        itemDiv.style.borderRadius = '8px';
+                        itemDiv.style.padding = '16px';
+                        itemDiv.style.display = 'flex';
+                        itemDiv.style.flexDirection = 'column';
+                        itemDiv.style.gap = '12px';
+                        itemDiv.style.marginBottom = '12px';
+                        
+                        // Header
+                        const header = document.createElement('div');
+                        header.style.display = 'flex';
+                        header.style.justifyContent = 'space-between';
+                        header.style.alignItems = 'center';
+                        
+                        const titleSpan = document.createElement('span');
+                        titleSpan.style.fontSize = '12px';
+                        titleSpan.style.fontWeight = '600';
+                        titleSpan.style.fontFamily = 'monospace';
+                        titleSpan.style.color = 'var(--text-primary)';
+                        titleSpan.innerText = file;
+                        
+                        const downloadBtn = document.createElement('a');
+                        downloadBtn.href = fileUrl;
+                        downloadBtn.download = file;
+                        downloadBtn.target = '_blank';
+                        downloadBtn.style.padding = '4px 10px';
+                        downloadBtn.style.fontSize = '11px';
+                        downloadBtn.style.background = 'rgba(255,255,255,0.08)';
+                        downloadBtn.style.border = '1px solid var(--border-color)';
+                        downloadBtn.style.borderRadius = '4px';
+                        downloadBtn.style.textDecoration = 'none';
+                        downloadBtn.style.color = 'var(--text-primary)';
+                        downloadBtn.style.cursor = 'pointer';
+                        downloadBtn.innerText = 'Download';
+                        
+                        header.appendChild(titleSpan);
+                        header.appendChild(downloadBtn);
+                        itemDiv.appendChild(header);
+                        
+                        // Preview if visual
+                        if (['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext)) {
+                            const img = document.createElement('img');
+                            img.src = fileUrl;
+                            img.style.maxWidth = '100%';
+                            img.style.maxHeight = '240px';
+                            img.style.borderRadius = '6px';
+                            img.style.objectFit = 'contain';
+                            img.style.border = '1px solid rgba(255,255,255,0.05)';
+                            itemDiv.appendChild(img);
+                        } else if (['mp4', 'webm'].includes(ext)) {
+                            const video = document.createElement('video');
+                            video.src = fileUrl;
+                            video.controls = true;
+                            video.style.maxWidth = '100%';
+                            video.style.maxHeight = '240px';
+                            video.style.borderRadius = '6px';
+                            video.style.border = '1px solid rgba(255,255,255,0.05)';
+                            itemDiv.appendChild(video);
+                        } else if (ext === 'pdf') {
+                            const docEmbed = document.createElement('embed');
+                            docEmbed.src = fileUrl;
+                            docEmbed.type = 'application/pdf';
+                            docEmbed.style.width = '100%';
+                            docEmbed.style.height = '300px';
+                            docEmbed.style.borderRadius = '6px';
+                            itemDiv.appendChild(docEmbed);
+                        } else if (['html', 'htm'].includes(ext)) {
+                            const docFrame = document.createElement('iframe');
+                            docFrame.src = fileUrl;
+                            docFrame.style.width = '100%';
+                            docFrame.style.height = '240px';
+                            docFrame.style.border = '1px solid rgba(255,255,255,0.05)';
+                            docFrame.style.borderRadius = '6px';
+                            docFrame.style.background = '#ffffff';
+                            itemDiv.appendChild(docFrame);
+                        } else if (['txt', 'log', 'json', 'py', 'yaml', 'yml'].includes(ext)) {
+                            const textPre = document.createElement('pre');
+                            textPre.style.background = '#090d16';
+                            textPre.style.border = '1px solid var(--border-color)';
+                            textPre.style.padding = '12px';
+                            textPre.style.borderRadius = '6px';
+                            textPre.style.color = '#e2e8f0';
+                            textPre.style.fontFamily = 'monospace';
+                            textPre.style.fontSize = '11px';
+                            textPre.style.whiteSpace = 'pre-wrap';
+                            textPre.style.maxHeight = '150px';
+                            textPre.style.overflowY = 'auto';
+                            
+                            fetch(fileUrl)
+                                .then(r => r.text())
+                                .then(t => { textPre.innerText = t; })
+                                .catch(e => { textPre.innerText = "Error loading content."; });
+                            itemDiv.appendChild(textPre);
+                        }
+                        
+                        container.appendChild(itemDiv);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading task artifacts:", err);
+                container.innerHTML = '<span style="color: var(--danger); font-size: 13px;">Error fetching artifacts.</span>';
+            }
+        }
 
         // Filter by Status Tab
         function filterStatus(status) {
@@ -1270,7 +1590,43 @@
 
         // Initial trigger
         loadCustomNamespaces();
-        fetchTaskList();
+        
+        // Auto-select workflow and namespace from URL run parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const autoRunId = urlParams.get('run');
+        if (autoRunId) {
+            fetch(`/api/tasks/${autoRunId}`)
+                .then(res => res.json())
+                .then(task => {
+                    if (task && task.namespace) {
+                        const select = document.getElementById('namespaceSelect');
+                        let exists = false;
+                        for (let i = 0; i < select.options.length; i++) {
+                            if (select.options[i].value === task.namespace) {
+                                exists = true;
+                                break;
+                            }
+                        }
+                        if (!exists) {
+                            const newOpt = document.createElement('option');
+                            newOpt.value = task.namespace;
+                            newOpt.innerText = task.namespace + '-namespace';
+                            select.insertBefore(newOpt, select.options[select.options.length - 1]);
+                        }
+                        select.value = task.namespace;
+                    }
+                    fetchTaskList().then(() => {
+                        selectWorkflow(autoRunId);
+                    });
+                })
+                .catch(err => {
+                    console.error("Error loading auto run ID:", err);
+                    fetchTaskList();
+                });
+        } else {
+            fetchTaskList();
+        }
+        
         setInterval(fetchTaskList, 3000); // refresh list every 3s
     </script>
 </body>

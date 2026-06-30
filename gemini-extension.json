@@ -1,0 +1,15 @@
+{
+  "name": "agyqueue",
+  "version": "0.1.2",
+  "description": "A pluggable, non-blocking asynchronous task queue and MCP server for AI Agents",
+  "mcpServers": {
+    "agyqueue": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/client-sse",
+        "https://<your-agyqueue-server-url>/sse"
+      ]
+    }
+  }
+}

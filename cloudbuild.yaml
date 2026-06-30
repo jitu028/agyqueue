@@ -1,0 +1,20 @@
+steps:
+  # Build the server image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '--target', 'server',
+      '-t', 'us-central1-docker.pkg.dev/ai-architect-sprint-028/agyqueue/server:latest',
+      '.'
+    ]
+  # Build the worker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '--target', 'worker',
+      '-t', 'us-central1-docker.pkg.dev/ai-architect-sprint-028/agyqueue/worker:latest',
+      '.'
+    ]
+images:
+  - 'us-central1-docker.pkg.dev/ai-architect-sprint-028/agyqueue/server:latest'
+  - 'us-central1-docker.pkg.dev/ai-architect-sprint-028/agyqueue/worker:latest'

@@ -28,7 +28,7 @@ def main():
     print(f"\nMonitoring progress for task {task_id}...")
     while True:
         status_res = client.get_task_status(task_id)
-        if "error" in status_res:
+        if "error" in status_res and status_res["error"] is not None:
             print(f"Error fetching status: {status_res['error']}")
             break
             

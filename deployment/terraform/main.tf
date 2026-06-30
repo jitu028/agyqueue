@@ -33,6 +33,8 @@ resource "google_vpc_access_connector" "connector" {
   region        = var.region
   ip_cidr_range = "10.8.0.0/28"
   network       = google_compute_network.vpc.name
+  min_instances = 2
+  max_instances = 3
 }
 
 # 4. Private Service Access for Cloud SQL & Redis

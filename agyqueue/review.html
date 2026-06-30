@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=device-width">
+    <title>AgyQueue Workflow Review - {{task_id}}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0f172a;
+            --bg-surface: #1e293b;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-primary: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .review-card {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 720px;
+            padding: 32px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 16px;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .status-completed {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .status-failed {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .status-cancelled {
+            background-color: rgba(107, 114, 128, 0.1);
+            color: var(--text-secondary);
+            border: 1px solid rgba(107, 114, 128, 0.2);
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .meta-item {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .meta-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .meta-value {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .prompt-box {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+
+        .log-section {
+            margin-bottom: 28px;
+        }
+
+        .log-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .log-box {
+            background-color: #090d16;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            color: #e2e8f0;
+            overflow-x: auto;
+            max-height: 300px;
+            white-space: pre-wrap;
+        }
+
+        .actions-row {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            border-top: 1px solid var(--border-color);
+            padding-top: 24px;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .btn-approve {
+            background-color: var(--success);
+            color: #fff;
+        }
+
+        .btn-approve:hover {
+            background-color: #059669;
+        }
+
+        .btn-reject {
+            background-color: var(--danger);
+            color: #fff;
+        }
+
+        .btn-reject:hover {
+            background-color: #dc2626;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .success-overlay {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .success-icon {
+            color: var(--success);
+            margin-bottom: 16px;
+        }
+
+        .success-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="review-card" id="reviewCard">
+        <div class="header-row">
+            <span class="title">Review Workflow Execution</span>
+            <span class="status-badge" id="statusBadge">{{status}}</span>
+        </div>
+
+        <div class="meta-grid">
+            <div class="meta-item">
+                <span class="meta-label">Task ID</span>
+                <span class="meta-value">{{task_id}}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Namespace</span>
+                <span class="meta-value">{{namespace}}</span>
+            </div>
+        </div>
+
+        <div class="log-section">
+            <div class="log-title">Workflow Trigger Instructions</div>
+            <div class="prompt-box">
+                {{prompt}}
+            </div>
+        </div>
+
+        <div class="log-section">
+            <div class="log-title">Review Workspace Files</div>
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; background: rgba(0,0,0,0.15); border: 1px solid var(--border-color); padding: 16px; border-radius: 8px;" id="artifactsContainer">
+                <span style="color: var(--text-secondary); font-size: 13px;">Loading workspace files...</span>
+            </div>
+        </div>
+
+        <div class="log-section">
+            <div class="log-title">Initial SRE Linter Scan logs</div>
+            <div class="log-box" id="logBox">{{linter_log}}</div>
+        </div>
+
+        <div class="actions-row" id="actionsRow">
+            <button class="btn btn-reject" onclick="handleAction('reject')" id="rejectBtn">Reject & Abort</button>
+            <button class="btn btn-approve" onclick="handleAction('approve')" id="approveBtn">Approve & Resume</button>
+        </div>
+    </div>
+
+    <div class="review-card success-overlay" id="successOverlay">
+        <svg class="success-icon" width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div class="success-text" id="successText">Workflow Approved</div>
+        <p style="color: var(--text-secondary); font-size: 13px;">This decision has been saved and execution will resume. You may close this tab.</p>
+    </div>
+
+    <script>
+        const taskId = "{{task_id}}";
+        const status = "{{status}}";
+
+        if (status !== 'WAITING') {
+            document.getElementById('rejectBtn').disabled = true;
+            document.getElementById('approveBtn').disabled = true;
+            document.getElementById('statusBadge').className = `status-badge status-${status.toLowerCase()}`;
+        }
+
+        async function handleAction(action) {
+            if (!confirm(`Are you sure you want to ${action} this workflow run?`)) return;
+            
+            try {
+                document.getElementById('rejectBtn').disabled = true;
+                document.getElementById('approveBtn').disabled = true;
+
+                if (action === 'approve') {
+                    const response = await fetch(`/api/tasks/${taskId}/signal`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ signal_name: 'approve', payload: 'Approved via Direct Review Link' })
+                    });
+                    if (response.ok) {
+                        showSuccess("Workflow Approved");
+                    } else {
+                        alert("Failed to submit approval signal");
+                        resetButtons();
+                    }
+                } else if (action === 'reject') {
+                    await fetch(`/api/tasks/${taskId}/signal`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ signal_name: 'reject', payload: 'Rejected via Direct Review Link' })
+                    });
+                    const response = await fetch(`/api/tasks/${taskId}/cancel`, { method: 'POST' });
+                    if (response.ok) {
+                        showSuccess("Workflow Rejected & Aborted");
+                    } else {
+                        alert("Failed to abort workflow");
+                        resetButtons();
+                    }
+                }
+            } catch (err) {
+                console.error("Action error:", err);
+                resetButtons();
+            }
+        }
+
+        function showSuccess(msg) {
+            document.getElementById('successText').innerText = msg;
+            document.getElementById('reviewCard').style.display = 'none';
+            document.getElementById('successOverlay').style.display = 'flex';
+        }
+
+        function resetButtons() {
+            document.getElementById('rejectBtn').disabled = false;
+            document.getElementById('approveBtn').disabled = false;
+        }
+
+        async function loadArtifacts() {
+            try {
+                const response = await fetch(`/api/tasks/${taskId}/artifacts`);
+                if (response.ok) {
+                    const data = await response.json();
+                    const container = document.getElementById('artifactsContainer');
+                    container.innerHTML = '';
+                    
+                    if (!data.artifacts || data.artifacts.length === 0) {
+                        container.innerHTML = '<span style="color: var(--text-secondary); font-size: 13px;">No workspace files available for review.</span>';
+                        return;
+                    }
+                    
+                    data.artifacts.forEach(file => {
+                        const link = document.createElement('a');
+                        link.href = `/api/tasks/${taskId}/artifacts/${file}`;
+                        link.target = '_blank';
+                        link.style.color = 'var(--accent-primary)';
+                        link.style.fontSize = '13px';
+                        link.style.textDecoration = 'none';
+                        link.style.fontWeight = '600';
+                        link.style.display = 'inline-flex';
+                        link.style.alignItems = 'center';
+                        link.style.gap = '6px';
+                        link.style.width = 'fit-content';
+                        link.innerHTML = `
+                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            ${file}
+                        `;
+                        container.appendChild(link);
+                    });
+                }
+            } catch (err) {
+                console.error("Error loading artifacts:", err);
+            }
+        }
+        
+        loadArtifacts();
+    </script>
+</body>
+</html>

@@ -3,6 +3,7 @@ resource "google_cloud_run_v2_service" "server" {
   name     = "agyqueue-server-${var.environment}"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
 
   template {
     service_account = google_service_account.app_sa.email
@@ -71,7 +72,8 @@ resource "google_cloud_run_v2_service" "server" {
 resource "google_cloud_run_v2_service" "worker" {
   name     = "agyqueue-worker-${var.environment}"
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL" # No public access
+  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY" # No public access
+  deletion_protection = false
 
   template {
     service_account = google_service_account.app_sa.email

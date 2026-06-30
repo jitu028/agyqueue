@@ -40,7 +40,7 @@ resource "google_sql_user" "db_user" {
 resource "google_secret_manager_secret" "db_password_secret" {
   secret_id = "agyqueue-db-password-${var.environment}"
   replication {
-    automatic = true
+    auto {}
   }
 }
 

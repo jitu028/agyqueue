@@ -67,5 +67,9 @@ class Settings:
     def heartbeat_timeout(self) -> float:
         return float(os.environ.get("HEARTBEAT_TIMEOUT_SECONDS", "15.0"))
 
+    @property
+    def server_url(self) -> str:
+        return os.environ.get("AGYQUEUE_SERVER_URL", "http://localhost:8000")
+
 # Global settings instance
 settings = Settings()
