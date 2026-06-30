@@ -271,6 +271,21 @@ AgyQueue natively supports **parent-child task aggregation**. When an orchestrat
 
 ---
 
+## 🎭 Live Walkthrough: Human-in-the-Loop SRE Compliance
+
+Want to see how this works in practice? We have recorded and documented a live, step-by-step terminal execution walkthrough of the Multi-Agent human-approval workflow.
+
+It covers:
+* **Automatic workspace isolation** via Git worktrees.
+* **Real-time linter audits** of Kubernetes manifests.
+* **Workflow pausing** at a custom `WAITING` state.
+* **External signal triggering** (the SRE manager's human-in-the-loop approval).
+* **Automatic patching & resolution**.
+
+👉 **Check out the detailed walkthrough here: [examples/multi_agent_approval_demo_run.md](examples/multi_agent_approval_demo_run.md)**
+
+---
+
 ## 🐳 Docker Compose Deployment (Redis + SSE Mode)
 
 To run the complete system with Redis queues and PostgreSQL stores:
