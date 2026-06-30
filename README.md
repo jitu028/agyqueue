@@ -111,7 +111,7 @@ from agyqueue.client import submit_async_task, check_task_progress, get_task_out
 # Define the coordinator agent
 orchestrator_agent = Agent(
     name="deployment_coordinator",
-    model="gemini-2.5-flash",
+    model="gemini-3.5-flash",
     instruction=(
         "You coordinate SRE compliance checks and API code generation workloads. "
         "Use submit_async_task to spawn background jobs. Do not wait for jobs in a loop. "

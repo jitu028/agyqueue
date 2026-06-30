@@ -7,7 +7,7 @@ def get_infra_linter_agent():
     """Infra linter subagent that audits configurations via AgyQueue."""
     return Agent(
         name="infra_linter",
-        model="gemini-2.5-flash",
+        model="gemini-3.5-flash",
         instruction=(
             "You are a specialized infrastructure linter. "
             "Always delegate Kubernetes configuration validation to AgyQueue "
@@ -21,7 +21,7 @@ def get_security_auditor_agent():
     """Security auditor subagent that checks container credentials and policies."""
     return Agent(
         name="security_auditor",
-        model="gemini-2.5-flash",
+        model="gemini-3.5-flash",
         instruction=(
             "You are a container security auditor. "
             "Always delegate container vulnerability scans to AgyQueue "
@@ -35,7 +35,7 @@ def get_coordinator_agent():
     """Release coordinator agent that manages the release checks."""
     return Agent(
         name="release_coordinator",
-        model="gemini-2.5-flash",
+        model="gemini-3.5-flash",
         instruction=(
             "You are the DevOps Release Pipeline Coordinator. "
             "When asked to validate a release pipeline, coordinate SRE compliance and "

@@ -17,7 +17,7 @@ def run_adk_orchestration_flow():
     # 1. Define the ADK Agent
     agent = Agent(
         name="adk_compliance_coordinator",
-        model="gemini-2.5-flash",
+        model="gemini-3.5-flash",
         instruction=(
             "You are a compliance agent that validates configuration manifests. "
             "Always submit manifest checks as background tasks using submit_async_task. "
