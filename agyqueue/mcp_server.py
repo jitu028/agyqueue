@@ -823,7 +823,7 @@ async def serve_agent_card(request: Request) -> JSONResponse:
         "name": "AgyQueue",
         "description": "A pluggable, non-blocking asynchronous task queue and MCP server for AI Agents",
         "url": settings.server_url,
-        "version": "0.1.2",
+        "version": "0.1.3",
         "protocolVersion": "1.0",
         "defaultInputModes": ["text/plain"],
         "defaultOutputModes": ["text/plain"],

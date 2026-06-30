@@ -1,6 +1,6 @@
 {
   "name": "agyqueue",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A pluggable, non-blocking asynchronous task queue and MCP server for AI Agents",
   "mcpServers": {
     "agyqueue": {
